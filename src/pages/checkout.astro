@@ -1,0 +1,192 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "lucide-astro"
+---
+
+<Layout title="Checkout | Valdivia Automotores">
+  <section class="bg-navy py-10 text-white">
+    <div class="container-app">
+      <span class="text-sm font-semibold uppercase tracking-[0.16em] text-brand-light">Paso 2 de 3</span>
+      <h1 class="mt-2 font-display text-3xl font-800 sm:text-4xl">Finalizá tu compra</h1>
+      <p class="mt-2 flex items-center gap-2 text-white/75">
+        <Lock class="h-4 w-4 text-brand-light" />
+        Pago protegido y encriptado
+      </p>
+    </div>
+  </section>
+
+  <!-- Estado sin carrito -->
+  <div id="empty-state" class="container-app hidden py-20 text-center">
+    <p class="font-display text-xl font-700 text-navy">No seleccionaste números todavía.</p>
+    <a href="/participar" class="btn-primary mt-6">Elegir mis números</a>
+  </div>
+
+  <form id="checkout-form" class="container-app grid gap-8 py-12 lg:grid-cols-[1fr_360px]">
+    <div class="space-y-8">
+      <!-- Datos -->
+      <fieldset class="card p-6">
+        <legend class="px-2 font-display text-lg font-700 text-navy">Tus datos</legend>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <label class="block">
+            <span class="text-sm font-600 text-navy/70">Nombre completo</span>
+            <input required name="name" type="text" class="input" placeholder="Juan Pérez" />
+          </label>
+          <label class="block">
+            <span class="text-sm font-600 text-navy/70">DNI</span>
+            <input required name="dni" type="text" inputmode="numeric" class="input" placeholder="30.123.456" />
+          </label>
+          <label class="block">
+            <span class="text-sm font-600 text-navy/70">Email</span>
+            <input required name="email" type="email" class="input" placeholder="juan@email.com" />
+          </label>
+          <label class="block">
+            <span class="text-sm font-600 text-navy/70">Teléfono</span>
+            <input required name="phone" type="tel" class="input" placeholder="11 5555 5555" />
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- Método de pago -->
+      <fieldset class="card p-6">
+        <legend class="px-2 font-display text-lg font-700 text-navy">Método de pago</legend>
+        <div class="mt-4 space-y-3">
+          <label class="pay-method flex cursor-pointer items-center gap-4 rounded-xl border-2 border-brand bg-brand/5 p-4">
+            <input type="radio" name="pay" value="mercadopago" checked class="h-4 w-4 accent-brand" />
+            <Wallet class="h-6 w-6 text-brand" />
+            <span class="flex-1">
+              <span class="block font-700 text-navy">Mercado Pago</span>
+              <span class="block text-sm text-navy/60">Dinero en cuenta, tarjetas y más</span>
+            </span>
+            <span class="rounded-md bg-[#009ee3] px-2 py-1 text-xs font-800 text-white">MP</span>
+          </label>
+          <label class="pay-method flex cursor-pointer items-center gap-4 rounded-xl border-2 border-navy/10 p-4">
+            <input type="radio" name="pay" value="card" class="h-4 w-4 accent-brand" />
+            <CreditCard class="h-6 w-6 text-navy/70" />
+            <span class="flex-1">
+              <span class="block font-700 text-navy">Tarjeta de crédito/débito</span>
+              <span class="block text-sm text-navy/60">Visa, Mastercard, Amex</span>
+            </span>
+          </label>
+          <label class="pay-method flex cursor-pointer items-center gap-4 rounded-xl border-2 border-navy/10 p-4">
+            <input type="radio" name="pay" value="transfer" class="h-4 w-4 accent-brand" />
+            <Landmark class="h-6 w-6 text-navy/70" />
+            <span class="flex-1">
+              <span class="block font-700 text-navy">Transferencia bancaria</span>
+              <span class="block text-sm text-navy/60">CBU / Alias</span>
+            </span>
+          </label>
+        </div>
+        <p class="mt-4 flex items-center gap-2 text-xs text-navy/50">
+          <ShieldCheck class="h-4 w-4 text-brand" />
+          Demo: no se realizará ningún cobro real.
+        </p>
+      </fieldset>
+    </div>
+
+    <!-- Resumen -->
+    <aside class="lg:sticky lg:top-24 lg:self-start">
+      <div class="card p-6">
+        <h3 class="font-display text-lg font-700 text-navy">Resumen</h3>
+        <dl class="mt-4 space-y-3 text-sm">
+          <div class="flex items-center justify-between">
+            <dt class="text-navy/60">Números</dt>
+            <dd class="font-700 text-navy" id="c-qty">-</dd>
+          </div>
+          <div class="flex items-center justify-between">
+            <dt class="text-navy/60">Subtotal</dt>
+            <dd class="font-700 text-navy" id="c-sub">-</dd>
+          </div>
+          <div class="h-px bg-navy/10"></div>
+          <div class="flex items-center justify-between">
+            <dt class="font-display text-base font-700 text-navy">Total</dt>
+            <dd class="font-display text-2xl font-800 text-brand" id="c-total">-</dd>
+          </div>
+        </dl>
+        <button type="submit" id="pay-btn" class="btn-primary mt-6 w-full">
+          <span id="pay-label">Pagar con Mercado Pago</span>
+          <ArrowRight class="h-5 w-5" />
+        </button>
+        <p class="mt-3 text-center text-xs text-navy/50">Al pagar aceptás las bases y condiciones.</p>
+      </div>
+    </aside>
+  </form>
+</Layout>
+
+<style>
+  .input {
+    @apply mt-1 h-11 w-full rounded-xl border border-navy/15 px-3 text-navy transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20;
+  }
+</style>
+
+<script>
+  import { readCart, writeCart, formatARS } from "@/lib/cart"
+
+  function init() {
+    const cart = readCart()
+    const form = document.getElementById("checkout-form") as HTMLFormElement | null
+    const empty = document.getElementById("empty-state")
+
+    if (!cart || cart.tickets < 1) {
+      form?.classList.add("hidden")
+      empty?.classList.remove("hidden")
+      return
+    }
+
+    const qty = document.getElementById("c-qty")
+    const sub = document.getElementById("c-sub")
+    const total = document.getElementById("c-total")
+    if (qty) qty.textContent = String(cart.tickets)
+    if (sub) sub.textContent = formatARS(cart.amount)
+    if (total) total.textContent = formatARS(cart.amount)
+
+    // Resaltar método seleccionado
+    const methods = Array.from(document.querySelectorAll<HTMLElement>(".pay-method"))
+    const payLabel = document.getElementById("pay-label")
+    const labels: Record<string, string> = {
+      mercadopago: "Pagar con Mercado Pago",
+      card: "Pagar con tarjeta",
+      transfer: "Confirmar transferencia",
+    }
+    const syncMethods = () => {
+      methods.forEach((m) => {
+        const input = m.querySelector<HTMLInputElement>('input[type="radio"]')
+        const active = input?.checked
+        m.classList.toggle("border-brand", !!active)
+        m.classList.toggle("bg-brand/5", !!active)
+        m.classList.toggle("border-navy/10", !active)
+        if (active && payLabel) payLabel.textContent = labels[input!.value] ?? "Pagar"
+      })
+    }
+    methods.forEach((m) => m.addEventListener("change", syncMethods))
+    syncMethods()
+
+    form?.addEventListener("submit", (e) => {
+      e.preventDefault()
+      const btn = document.getElementById("pay-btn") as HTMLButtonElement | null
+      const label = document.getElementById("pay-label")
+      const fd = new FormData(form)
+      if (btn) btn.disabled = true
+      if (label) label.textContent = "Procesando pago..."
+      if (btn) btn.classList.add("opacity-70")
+
+      // Persistir datos del comprador y método para la confirmación
+      writeCart({
+        ...cart,
+        // @ts-expect-error extendemos el estado de la demo
+        buyer: {
+          name: fd.get("name"),
+          email: fd.get("email"),
+          method: fd.get("pay"),
+        },
+      })
+
+      // Simula el redirect a la pasarela de Mercado Pago
+      setTimeout(() => {
+        window.location.href = "/confirmacion"
+      }, 1600)
+    })
+  }
+
+  init()
+  document.addEventListener("astro:page-load", init)
+</script>

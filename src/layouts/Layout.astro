@@ -1,0 +1,40 @@
+---
+import "@/styles/global.css"
+import Header from "@/components/Header.astro"
+import Footer from "@/components/Footer.astro"
+
+interface Props {
+  title?: string
+  description?: string
+}
+
+const {
+  title = "Valdivia Automotores | Gran Sorteo Sedán 0km",
+  description = "Participá del gran sorteo de un sedán 0km de Valdivia Automotores. Comprá tus números online con Mercado Pago de forma rápida y segura.",
+} = Astro.props
+---
+
+<!doctype html>
+<html lang="es" class="bg-cloud">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1f2a52" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/logo-valdivia.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <Header />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

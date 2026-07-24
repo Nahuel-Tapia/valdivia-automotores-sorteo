@@ -1,0 +1,66 @@
+---
+import { raffle } from "@/data/raffle"
+---
+
+<div
+  class="flex flex-wrap items-center justify-center gap-3 sm:gap-4"
+  data-countdown
+  data-target={raffle.drawDate}
+>
+  {
+    [
+      ["days", "Días"],
+      ["hours", "Horas"],
+      ["minutes", "Min"],
+      ["seconds", "Seg"],
+    ].map(([key, label]) => (
+      <div class="flex min-w-[68px] flex-col items-center rounded-2xl bg-white/10 px-4 py-3 backdrop-blur">
+        <span
+          class="font-display text-3xl font-800 tabular-nums text-white sm:text-4xl"
+          data-unit={key}
+        >
+          00
+        </span>
+        <span class="mt-1 text-[11px] font-semibold uppercase tracking-widest text-white/70">
+          {label}
+        </span>
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  function initCountdowns() {
+    const roots = document.querySelectorAll<HTMLElement>("[data-countdown]")
+    roots.forEach((root) => {
+      const target = new Date(root.dataset.target ?? "").getTime()
+      const units = {
+        days: root.querySelector<HTMLElement>('[data-unit="days"]'),
+        hours: root.querySelector<HTMLElement>('[data-unit="hours"]'),
+        minutes: root.querySelector<HTMLElement>('[data-unit="minutes"]'),
+        seconds: root.querySelector<HTMLElement>('[data-unit="seconds"]'),
+      }
+
+      const pad = (n: number) => String(Math.max(0, n)).padStart(2, "0")
+
+      const tick = () => {
+        const diff = target - Date.now()
+        const total = Math.max(0, Math.floor(diff / 1000))
+        const days = Math.floor(total / 86400)
+        const hours = Math.floor((total % 86400) / 3600)
+        const minutes = Math.floor((total % 3600) / 60)
+        const seconds = total % 60
+        if (units.days) units.days.textContent = pad(days)
+        if (units.hours) units.hours.textContent = pad(hours)
+        if (units.minutes) units.minutes.textContent = pad(minutes)
+        if (units.seconds) units.seconds.textContent = pad(seconds)
+      }
+
+      tick()
+      setInterval(tick, 1000)
+    })
+  }
+
+  initCountdowns()
+  document.addEventListener("astro:page-load", initCountdowns)
+</script>

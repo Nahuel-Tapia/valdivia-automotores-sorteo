@@ -1,0 +1,22 @@
+---
+import { raffle } from "@/data/raffle"
+---
+
+<section class="container-app -mt-6 pb-4 pt-16">
+  <div class="card p-6 sm:p-8">
+    <div class="flex flex-wrap items-end justify-between gap-2">
+      <div>
+        <h2 class="font-display text-lg font-700 text-navy">Números vendidos</h2>
+        <p class="text-sm text-navy/60">No te quedes afuera, quedan pocos disponibles.</p>
+      </div>
+      <span class="font-display text-2xl font-800 text-brand">{raffle.soldPercentage}%</span>
+    </div>
+    <div class="mt-4 h-3 w-full overflow-hidden rounded-full bg-cloud">
+      <div
+        class="h-full rounded-full bg-gradient-to-r from-brand to-brand-light"
+        style={`width: ${raffle.soldPercentage}%`}
+      >
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,51 @@
+---
+import { raffle } from "@/data/raffle"
+import { ShieldCheck, Lock } from "lucide-astro"
+const year = new Date().getFullYear()
+---
+
+<footer class="mt-20 border-t border-navy/10 bg-navy text-white">
+  <div class="container-app grid gap-10 py-12 md:grid-cols-3">
+    <div>
+      <div class="flex items-center gap-3">
+        <img
+          src="/logo-valdivia.png"
+          alt="Valdivia Automotores"
+          width="44"
+          height="44"
+          class="h-11 w-11 rounded-lg bg-white/95 object-contain p-1"
+        />
+        <span class="font-display text-lg font-700">Valdivia Automotores</span>
+      </div>
+      <p class="mt-4 max-w-xs text-sm leading-relaxed text-white/70">
+        {raffle.brand} organiza sorteos oficiales con total transparencia y respaldo. Jugá seguro, jugá con nosotros.
+      </p>
+    </div>
+
+    <div class="text-sm">
+      <h3 class="font-display text-sm font-700 uppercase tracking-wider text-brand-light">Sorteo</h3>
+      <ul class="mt-4 space-y-2 text-white/70">
+        <li><a href="/#premio" class="transition hover:text-white">El premio</a></li>
+        <li><a href="/#como-participar" class="transition hover:text-white">Cómo participar</a></li>
+        <li><a href="/participar" class="transition hover:text-white">Comprar números</a></li>
+        <li><a href="/#bases" class="transition hover:text-white">Bases y condiciones</a></li>
+      </ul>
+    </div>
+
+    <div class="text-sm">
+      <h3 class="font-display text-sm font-700 uppercase tracking-wider text-brand-light">Pago seguro</h3>
+      <ul class="mt-4 space-y-3 text-white/70">
+        <li class="flex items-center gap-2"><ShieldCheck class="h-4 w-4 text-brand-light" /> Compra protegida</li>
+        <li class="flex items-center gap-2"><Lock class="h-4 w-4 text-brand-light" /> Datos encriptados</li>
+      </ul>
+      <p class="mt-4 text-xs text-white/50">Aceptamos Mercado Pago, tarjetas y transferencias.</p>
+    </div>
+  </div>
+
+  <div class="border-t border-white/10 py-5">
+    <div class="container-app flex flex-col items-center justify-between gap-2 text-xs text-white/50 sm:flex-row">
+      <p>© {year} Valdivia Automotores. Todos los derechos reservados.</p>
+      <p>Sorteo con fines de demostración. Sitio de ejemplo.</p>
+    </div>
+  </div>
+</footer>
