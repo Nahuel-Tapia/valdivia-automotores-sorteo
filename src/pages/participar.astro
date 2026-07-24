@@ -128,6 +128,8 @@ import { Check, Ticket, Minus, Plus, ArrowRight } from "lucide-astro"
       if (sumQty) sumQty.textContent = String(tickets)
       if (sumUnit) sumUnit.textContent = formatARS(unit)
       if (sumTotal) sumTotal.textContent = formatARS(amount)
+      // Persistimos en cada cambio para evitar condiciones de carrera al navegar
+      writeCart({ tickets, amount, packageId })
     }
 
     const clearPackSelection = () => {
