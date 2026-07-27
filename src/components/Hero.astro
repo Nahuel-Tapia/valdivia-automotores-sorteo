@@ -2,6 +2,8 @@
 import { raffle, formatCurrency } from "@/data/raffle"
 import Countdown from "@/components/Countdown.astro"
 import { Ticket, ShieldCheck } from "lucide-astro"
+import { Image } from "astro:assets"
+import premioSedan from "@/assets/premio-sedan.png"
 ---
 
 <section class="relative overflow-hidden bg-navy text-white">
@@ -45,11 +47,11 @@ import { Ticket, ShieldCheck } from "lucide-astro"
 
     <div class="animate-fade-up">
       <div class="relative rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-        <img
-          src={raffle.heroImage}
+        <Image
+          src={premioSedan}
           alt={`${raffle.prizeName} ${raffle.prizeYear}, premio del sorteo`}
-          width="720"
-          height="480"
+          width={720}
+          height={480}
           class="w-full rounded-2xl object-cover"
         />
         <div class="absolute -bottom-5 left-1/2 w-[92%] -translate-x-1/2 rounded-2xl bg-navy-dark/90 p-4 shadow-card backdrop-blur">

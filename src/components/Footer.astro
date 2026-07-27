@@ -1,6 +1,8 @@
 ---
 import { raffle } from "@/data/raffle"
 import { ShieldCheck, Lock } from "lucide-astro"
+import { Image } from "astro:assets"
+import logoValdivia from "@/assets/logo-valdivia.png"
 const year = new Date().getFullYear()
 ---
 
@@ -8,11 +10,11 @@ const year = new Date().getFullYear()
   <div class="container-app grid gap-10 py-12 md:grid-cols-3">
     <div>
       <div class="flex items-center gap-3">
-        <img
-          src="/logo-valdivia.png"
+        <Image
+          src={logoValdivia}
           alt="Valdivia Automotores"
-          width="44"
-          height="44"
+          width={44}
+          height={44}
           class="h-11 w-11 rounded-lg bg-white/95 object-contain p-1"
         />
         <span class="font-display text-lg font-700">Valdivia Automotores</span>

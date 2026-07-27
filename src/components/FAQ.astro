@@ -1,0 +1,57 @@
+---
+import { HelpCircle, ChevronDown } from "lucide-astro"
+
+const faqs = [
+  {
+    question: "¿Cómo se realiza el sorteo y cómo sé si gané?",
+    answer: "El sorteo se transmite en vivo a través de nuestras redes sociales oficiales y los números ganadores se extraen en combinación con la Lotería Nacional. Además, notificaremos al ganador por teléfono y correo electrónico de forma inmediata.",
+  },
+  {
+    question: "¿Qué incluye el premio del vehículo 0km?",
+    answer: "El premio incluye el vehículo Sedán 0km modelo 2025 completamente patentado, con flete, formularios y transferencia a nombre del ganador 100% bonificados. No tenés que pagar ningún costo adicional.",
+  },
+  {
+    question: "¿Cómo recibo mis números después de pagar?",
+    answer: "Una vez completado el pago en Mercado Pago o acreditada la transferencia, el sistema te asigna tus números automáticamente y te envía un comprobante digital en PDF directo a tu correo electrónico.",
+  },
+  {
+    question: "¿Cuáles son los medios de pago aceptados?",
+    answer: "Podés abonar con dinero en cuenta de Mercado Pago, tarjetas de crédito/débito (Visa, Mastercard, Amex) o transferencia bancaria directa a nuestro CBU/Alias oficial.",
+  },
+  {
+    question: "¿Existe un límite de números que puedo comprar?",
+    answer: "No hay límite por persona. Podés adquirir los paquetes con descuento o la cantidad individual que desees para incrementar tus posibilidades de ganar.",
+  },
+]
+---
+
+<section id="faq" class="container-app scroll-mt-20 py-16">
+  <div class="mx-auto max-w-3xl text-center">
+    <span class="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-3.5 py-1 text-xs font-700 uppercase tracking-wider text-brand">
+      <HelpCircle class="h-4 w-4" />
+      Dudas frecuentes
+    </span>
+    <h2 class="mt-3 font-display text-3xl font-800 text-navy sm:text-4xl">
+      Preguntas Frecuentes
+    </h2>
+    <p class="mt-2 text-base text-navy/70">
+      Todo lo que necesitás saber sobre la transparencia del sorteo, entrega del premio y formas de pago.
+    </p>
+  </div>
+
+  <div class="mx-auto mt-10 max-w-3xl space-y-4">
+    {
+      faqs.map((faq, i) => (
+        <details class="group card overflow-hidden p-0 transition-all duration-200 border border-navy/10 open:border-brand/30 open:shadow-md">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 p-5 font-display text-base font-700 text-navy select-none list-none group-open:text-brand">
+            <span>{faq.question}</span>
+            <ChevronDown class="h-5 w-5 flex-none text-navy/40 transition-transform duration-200 group-open:rotate-180 group-open:text-brand" />
+          </summary>
+          <div class="px-5 pb-5 text-sm leading-relaxed text-navy/70 border-t border-navy/5 pt-3">
+            {faq.answer}
+          </div>
+        </details>
+      ))
+    }
+  </div>
+</section>

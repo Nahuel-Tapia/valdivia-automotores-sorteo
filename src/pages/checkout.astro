@@ -160,30 +160,73 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
     methods.forEach((m) => m.addEventListener("change", syncMethods))
     syncMethods()
 
-    form?.addEventListener("submit", (e) => {
+    form?.addEventListener("submit", async (e) => {
       e.preventDefault()
       const btn = document.getElementById("pay-btn") as HTMLButtonElement | null
       const label = document.getElementById("pay-label")
       const fd = new FormData(form)
+
       if (btn) btn.disabled = true
-      if (label) label.textContent = "Procesando pago..."
+      if (label) label.textContent = "Reservando boletos en el servidor..."
       if (btn) btn.classList.add("opacity-70")
 
-      // Persistir datos del comprador y método para la confirmación
-      writeCart({
-        ...cart,
-        // @ts-expect-error extendemos el estado de la demo
-        buyer: {
-          name: fd.get("name"),
-          email: fd.get("email"),
-          method: fd.get("pay"),
-        },
-      })
+      const buyerData = {
+        name: String(fd.get("name") ?? ""),
+        email: String(fd.get("email") ?? ""),
+        method: String(fd.get("pay") ?? ""),
+        dni: String(fd.get("dni") ?? ""),
+        phone: String(fd.get("phone") ?? ""),
+      }
 
-      // Simula el redirect a la pasarela de Mercado Pago
-      setTimeout(() => {
+      try {
+        // 1. Llamada al endpoint del servidor para crear la orden y reservar tickets
+        const checkoutRes = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tickets: cart.tickets,
+            selectedNumbers: (cart as any).selectedNumbers,
+            sessionId: localStorage.getItem("valdivia_session_id") || undefined,
+            buyer: buyerData,
+            paymentMethod: buyerData.method,
+          }),
+        })
+
+        const checkoutData = await checkoutRes.json()
+        if (!checkoutRes.ok || !checkoutData.success) {
+          alert(checkoutData.error || "Error al procesar la reserva.")
+          if (btn) btn.disabled = false
+          if (btn) btn.classList.remove("opacity-70")
+          if (label) label.textContent = "Reintentar"
+          return
+        }
+
+        if (label) label.textContent = "Auto-aprobando pago seguro..."
+
+        // 2. Auto-aprobación del pago (Modo Demo / Auto-aprobación)
+        await fetch("/api/simulate-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: checkoutData.orderId }),
+        })
+
+        // 3. Guardar estado con el orderId devuelto por la DB real
+        writeCart({
+          ...cart,
+          buyer: buyerData,
+          // @ts-expect-error opcional para la vista
+          orderId: checkoutData.orderId,
+          ticketsList: checkoutData.tickets,
+        })
+
         window.location.href = "/confirmacion"
-      }, 1600)
+      } catch (err) {
+        console.error("Error en checkout:", err)
+        alert("Ocurrió un error al comunicarse con el servidor.")
+        if (btn) btn.disabled = false
+        if (btn) btn.classList.remove("opacity-70")
+        if (label) label.textContent = "Reintentar"
+      }
     })
   }
 

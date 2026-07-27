@@ -1,6 +1,8 @@
 ---
 import { raffle } from "@/data/raffle"
 import { Gauge, Cog, Sparkles, FileCheck } from "lucide-astro"
+import { Image } from "astro:assets"
+import premioInterior from "@/assets/premio-interior.png"
 
 const icons = [Cog, Gauge, Sparkles, FileCheck]
 ---
@@ -37,11 +39,11 @@ const icons = [Cog, Gauge, Sparkles, FileCheck]
     </div>
 
     <div class="order-1 lg:order-2">
-      <img
-        src={raffle.interiorImage}
+      <Image
+        src={premioInterior}
         alt={`Interior del ${raffle.prizeName}`}
-        width="720"
-        height="520"
+        width={720}
+        height={520}
         class="w-full rounded-3xl border border-navy/10 object-cover shadow-card"
       />
     </div>

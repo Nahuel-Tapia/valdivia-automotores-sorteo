@@ -1,30 +1,45 @@
+import { persistentAtom } from "@nanostores/persistent"
+
+export interface BuyerInfo {
+  name: string
+  email: string
+  method: string
+  dni?: string
+  phone?: string
+}
+
 export interface CartState {
   tickets: number
   amount: number
-  packageId: string | null
+  packageId?: string | null
+  selectedNumbers?: string[]
+  buyer?: BuyerInfo
 }
 
-const KEY = "valdivia_cart"
+const initialCart: CartState = {
+  tickets: 0,
+  amount: 0,
+  packageId: null,
+  selectedNumbers: [],
+}
+
+export const cartStore = persistentAtom<CartState>("valdivia_cart", initialCart, {
+  encode: JSON.stringify,
+  decode: JSON.parse,
+  listen: false,
+})
 
 export function readCart(): CartState | null {
-  if (typeof window === "undefined") return null
-  try {
-    const raw = window.sessionStorage.getItem(KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as CartState
-  } catch {
-    return null
-  }
+  const current = cartStore.get()
+  return current.tickets > 0 ? current : null
 }
 
 export function writeCart(state: CartState): void {
-  if (typeof window === "undefined") return
-  window.sessionStorage.setItem(KEY, JSON.stringify(state))
+  cartStore.set(state)
 }
 
 export function clearCart(): void {
-  if (typeof window === "undefined") return
-  window.sessionStorage.removeItem(KEY)
+  cartStore.set(initialCart)
 }
 
 export function formatARS(value: number): string {

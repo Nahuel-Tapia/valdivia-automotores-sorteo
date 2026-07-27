@@ -1,0 +1,309 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckCircle } from "lucide-astro"
+---
+
+<Layout title="Panel de Administración | Valdivia Automotores">
+  <section class="bg-navy py-8 text-white">
+    <div class="container-app flex items-center justify-between">
+      <div>
+        <span class="text-xs font-semibold uppercase tracking-widest text-brand-light">Dashboard Privado</span>
+        <h1 class="mt-1 font-display text-2xl font-800 sm:text-3xl">Administración de Sorteo</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <a id="btn-export-csv" href="/api/admin/export" class="hidden btn-primary text-xs py-2 px-3 bg-brand text-white">
+          <Download class="h-4 w-4" />
+          Exportar CSV
+        </a>
+        <button id="btn-logout" class="hidden btn-secondary text-xs py-2 px-3 bg-white/10 border-white/20 text-white hover:bg-white/20">
+          <LogOut class="h-4 w-4" />
+          Cerrar Sesión
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Login Form -->
+  <div id="login-section" class="container-app py-16">
+    <div class="mx-auto max-w-md card p-8">
+      <div class="flex items-center gap-3 border-b border-navy/10 pb-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand">
+          <Lock class="h-5 w-5" />
+        </span>
+        <div>
+          <h2 class="font-display text-lg font-700 text-navy">Acceso Administrador</h2>
+          <p class="text-xs text-navy/60">Ingresá tus credenciales oficiales</p>
+        </div>
+      </div>
+
+      <form id="admin-login-form" class="mt-6 space-y-4">
+        <label class="block">
+          <span class="text-xs font-700 text-navy/70 uppercase">Email</span>
+          <input
+            required
+            type="email"
+            id="admin-email"
+            class="mt-1 h-11 w-full rounded-xl border border-navy/15 px-3 text-sm text-navy focus:border-brand focus:outline-none"
+            placeholder="admin@valdivia.com"
+          />
+        </label>
+        <label class="block">
+          <span class="text-xs font-700 text-navy/70 uppercase">Contraseña</span>
+          <input
+            required
+            type="password"
+            id="admin-password"
+            class="mt-1 h-11 w-full rounded-xl border border-navy/15 px-3 text-sm text-navy focus:border-brand focus:outline-none"
+            placeholder="••••••••"
+          />
+        </label>
+        <button type="submit" id="btn-login" class="btn-primary mt-2 w-full">
+          Ingresar al Panel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div id="dashboard-section" class="container-app hidden py-12 space-y-8">
+    <!-- Tarjetas de Métricas -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-700 uppercase tracking-wider text-navy/50">Recaudación Total</span>
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <DollarSign class="h-5 w-5" />
+          </span>
+        </div>
+        <p class="mt-3 font-display text-2xl font-800 text-navy" id="m-revenue">$0</p>
+        <p class="mt-1 text-xs text-navy/60"><span id="m-approved-orders">0</span> órdenes aprobadas</p>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-700 uppercase tracking-wider text-navy/50">Boletos Vendidos</span>
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10 text-green-600">
+            <Ticket class="h-5 w-5" />
+          </span>
+        </div>
+        <p class="mt-3 font-display text-2xl font-800 text-navy" id="m-paid">0</p>
+        <p class="mt-1 text-xs text-navy/60">Confirmados en DB</p>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-700 uppercase tracking-wider text-navy/50">Boletos Reservados</span>
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
+            <Ticket class="h-5 w-5" />
+          </span>
+        </div>
+        <p class="mt-3 font-display text-2xl font-800 text-navy" id="m-reserved">0</p>
+        <p class="mt-1 text-xs text-navy/60">Tiempo en ventana de 15m</p>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-700 uppercase tracking-wider text-navy/50">Boletos Disponibles</span>
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
+            <Ticket class="h-5 w-5" />
+          </span>
+        </div>
+        <p class="mt-3 font-display text-2xl font-800 text-navy" id="m-available">10.000</p>
+        <p class="mt-1 text-xs text-navy/60">De 10.000 totales</p>
+      </div>
+    </div>
+
+    <!-- Tabla de Últimas Órdenes y Buscador -->
+    <div class="card p-6">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <div>
+          <h2 class="font-display text-lg font-700 text-navy">Gestión de Órdenes y Participantes</h2>
+          <p class="text-xs text-navy/60">Buscá y gestioná las compras registradas en tiempo real</p>
+        </div>
+        <div class="relative w-full sm:w-64">
+          <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy/40" />
+          <input
+            type="text"
+            id="search-orders"
+            placeholder="Buscar por DNI, Nombre o ID..."
+            class="h-9 w-full rounded-xl border border-navy/15 pl-9 pr-3 text-xs text-navy focus:border-brand focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-navy/10 text-xs font-700 uppercase text-navy/50">
+            <tr>
+              <th class="pb-3">ID Orden</th>
+              <th class="pb-3">Comprador</th>
+              <th class="pb-3">Email</th>
+              <th class="pb-3">Boletos</th>
+              <th class="pb-3">Monto</th>
+              <th class="pb-3">Estado</th>
+              <th class="pb-3 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="orders-table-body" class="divide-y divide-navy/5 font-500">
+            <tr>
+              <td colspan="7" class="py-4 text-center text-navy/50">Cargando órdenes...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { formatARS } from "@/lib/cart"
+
+  function initAdmin() {
+    const loginSec = document.getElementById("login-section")
+    const dashSec = document.getElementById("dashboard-section")
+    const form = document.getElementById("admin-login-form") as HTMLFormElement | null
+    const logoutBtn = document.getElementById("btn-logout")
+    const exportBtn = document.getElementById("btn-export-csv")
+    const searchInput = document.getElementById("search-orders") as HTMLInputElement | null
+
+    let allOrders: any[] = []
+
+    const token = localStorage.getItem("valdivia_admin_token")
+    if (token) {
+      showDashboard()
+    }
+
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const email = (document.getElementById("admin-email") as HTMLInputElement).value
+      const password = (document.getElementById("admin-password") as HTMLInputElement).value
+
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        })
+        const data = await res.json()
+        if (data.success && data.token) {
+          localStorage.setItem("valdivia_admin_token", data.token)
+          showDashboard()
+        } else {
+          alert(data.error || "Credenciales incorrectas")
+        }
+      } catch (err) {
+        alert("Error de conexión al autenticar")
+      }
+    })
+
+    logoutBtn?.addEventListener("click", () => {
+      localStorage.removeItem("valdivia_admin_token")
+      location.reload()
+    })
+
+    searchInput?.addEventListener("input", (e) => {
+      const q = (e.target as HTMLInputElement).value.trim().toLowerCase()
+      renderOrdersTable(allOrders.filter(o => 
+        o.id.toLowerCase().includes(q) || 
+        o.buyerName.toLowerCase().includes(q) || 
+        o.buyerEmail.toLowerCase().includes(q)
+      ))
+    })
+
+    async function showDashboard() {
+      loginSec?.classList.add("hidden")
+      dashSec?.classList.remove("hidden")
+      logoutBtn?.classList.remove("hidden")
+      exportBtn?.classList.remove("hidden")
+
+      try {
+        const res = await fetch("/api/admin/metrics")
+        const data = await res.json()
+        if (data.success) {
+          const m = data.metrics
+          document.getElementById("m-revenue")!.textContent = formatARS(m.totalRevenue)
+          document.getElementById("m-approved-orders")!.textContent = String(m.approvedOrders)
+          document.getElementById("m-paid")!.textContent = String(m.paidTickets)
+          document.getElementById("m-reserved")!.textContent = String(m.reservedTickets)
+          document.getElementById("m-available")!.textContent = String(m.availableTickets)
+
+          allOrders = data.recentOrders || []
+          renderOrdersTable(allOrders)
+        }
+      } catch (err) {
+        console.error("Error al cargar métricas de admin:", err)
+      }
+    }
+
+    function renderOrdersTable(orders: any[]) {
+      const tbody = document.getElementById("orders-table-body")
+      if (!tbody) return
+
+      if (orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-navy/50">No hay órdenes registradas aún.</td></tr>`
+        return
+      }
+
+      tbody.innerHTML = orders
+        .map(
+          (o: any) => `
+        <tr class="hover:bg-cloud/50">
+          <td class="py-3 font-700 text-brand">${o.id}</td>
+          <td class="py-3 font-600 text-navy">${o.buyerName}</td>
+          <td class="py-3 text-navy/70">${o.buyerEmail}</td>
+          <td class="py-3 font-700 text-navy">${o.ticketCount}</td>
+          <td class="py-3 font-700 text-navy">${formatARS(o.totalAmount)}</td>
+          <td class="py-3">
+            <span class="rounded-full px-2.5 py-1 text-xs font-800 ${
+              o.status === "approved"
+                ? "bg-green-100 text-green-700"
+                : o.status === "pending"
+                ? "bg-amber-100 text-amber-700"
+                : "bg-red-100 text-red-700"
+            }">
+              ${o.status.toUpperCase()}
+            </span>
+          </td>
+          <td class="py-3 text-right">
+            ${
+              o.status === "pending"
+                ? `<button data-order="${o.id}" class="btn-approve-order inline-flex items-center gap-1 rounded-lg bg-brand px-2.5 py-1 text-xs font-700 text-white hover:bg-brand-dark">Aprobar</button>`
+                : `<span class="text-xs text-navy/40">Ok</span>`
+            }
+          </td>
+        </tr>
+      `
+        )
+        .join("")
+
+      // Asignar handlers a botones de aprobación manual
+      tbody.querySelectorAll(".btn-approve-order").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const orderId = (btn as HTMLElement).dataset.order
+          if (!orderId) return
+          if (!confirm(`¿Confirmás la aprobación manual del pago de la orden #${orderId}?`)) return
+
+          try {
+            const res = await fetch("/api/admin/approve-order", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderId }),
+            })
+            const data = await res.json()
+            if (data.success) {
+              alert("Orden aprobada exitosamente y correo enviado.")
+              showDashboard()
+            } else {
+              alert(data.error || "No se pudo aprobar la orden")
+            }
+          } catch {
+            alert("Error de red al aprobar orden")
+          }
+        })
+      })
+    }
+  }
+
+  initAdmin()
+  document.addEventListener("astro:page-load", initAdmin)
+</script>

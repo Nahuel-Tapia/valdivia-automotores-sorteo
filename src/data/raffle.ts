@@ -1,11 +1,3 @@
-export interface TicketPackage {
-  id: string
-  tickets: number
-  price: number
-  popular?: boolean
-  bonus?: string
-}
-
 export interface PrizeSpec {
   label: string
   value: string
@@ -31,12 +23,6 @@ export const raffle = {
     { label: "Equipamiento", value: "Full - Pack Tech" },
     { label: "Patentamiento", value: "Incluido" },
   ] as PrizeSpec[],
-  packages: [
-    { id: "pack-5", tickets: 5, price: 6750, bonus: "10% OFF" },
-    { id: "pack-10", tickets: 10, price: 12000, popular: true, bonus: "20% OFF" },
-    { id: "pack-25", tickets: 25, price: 26250, bonus: "30% OFF" },
-    { id: "pack-50", tickets: 50, price: 45000, bonus: "40% OFF" },
-  ] as TicketPackage[],
 }
 
 export function formatCurrency(value: number): string {

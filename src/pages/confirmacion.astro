@@ -2,6 +2,8 @@
 import Layout from "@/layouts/Layout.astro"
 import { raffle } from "@/data/raffle"
 import { CheckCircle2, Mail, Home, Ticket } from "lucide-astro"
+import { Image } from "astro:assets"
+import logoValdivia from "@/assets/logo-valdivia.png"
 
 const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
   day: "2-digit",
@@ -34,7 +36,7 @@ const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
       <div class="card overflow-hidden">
         <div class="flex items-center justify-between bg-navy px-6 py-4 text-white">
           <div class="flex items-center gap-3">
-            <img src="/logo-valdivia.png" alt="Valdivia Automotores" width="36" height="36" class="h-9 w-9 rounded-lg bg-white/95 object-contain p-1" />
+            <Image src={logoValdivia} alt="Valdivia Automotores" width={36} height={36} class="h-9 w-9 rounded-lg bg-white/95 object-contain p-1" />
             <span class="font-display font-700">Comprobante de participación</span>
           </div>
           <span class="rounded-lg bg-brand px-3 py-1 text-xs font-800" id="order-id">#000000</span>
@@ -87,9 +89,7 @@ const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
   import { readCart, clearCart, formatARS, generateTicketNumbers } from "@/lib/cart"
 
   function init() {
-    const cart = readCart() as
-      | (ReturnType<typeof readCart> & { buyer?: { name?: string; email?: string; method?: string } })
-      | null
+    const cart = readCart()
 
     const noOrder = document.getElementById("no-order")
     const order = document.getElementById("order")
@@ -105,7 +105,8 @@ const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
       if (el) el.textContent = val
     }
 
-    const orderId = "#" + Math.floor(100000 + Math.random() * 900000)
+    const cartExt = cart as typeof cart & { orderId?: string; ticketsList?: string[] }
+    const orderId = cartExt?.orderId ? `#${cartExt.orderId}` : "#" + Math.floor(100000 + Math.random() * 900000)
     set("order-id", orderId)
     set("buyer-name", cart.buyer?.name || "Participante")
     set("buyer-email", cart.buyer?.email || "-")
@@ -114,7 +115,9 @@ const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
 
     const numbersEl = document.getElementById("numbers")
     if (numbersEl) {
-      const nums = generateTicketNumbers(cart.tickets)
+      const nums = cartExt?.ticketsList && cartExt.ticketsList.length > 0
+        ? cartExt.ticketsList
+        : generateTicketNumbers(cart.tickets)
       numbersEl.innerHTML = nums
         .map(
           (n) =>

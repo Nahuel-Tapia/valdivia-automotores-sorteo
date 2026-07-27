@@ -1,15 +1,17 @@
 ---
 import { Ticket } from "lucide-astro"
+import { Image } from "astro:assets"
+import logoValdivia from "@/assets/logo-valdivia.png"
 ---
 
 <header class="sticky top-0 z-50 border-b border-navy/10 bg-white/90 backdrop-blur">
   <div class="container-app flex h-16 items-center justify-between gap-4">
     <a href="/" class="flex items-center gap-3">
-      <img
-        src="/logo-valdivia.png"
+      <Image
+        src={logoValdivia}
         alt="Valdivia Automotores"
-        width="40"
-        height="40"
+        width={40}
+        height={40}
         class="h-10 w-10 rounded-lg object-contain"
       />
       <span class="flex flex-col leading-tight">
@@ -21,6 +23,7 @@ import { Ticket } from "lucide-astro"
     <nav class="hidden items-center gap-8 md:flex" aria-label="Principal">
       <a href="/#premio" class="text-sm font-semibold text-navy/70 transition hover:text-navy">El premio</a>
       <a href="/#como-participar" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Cómo participar</a>
+      <a href="/#faq" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Preguntas Frecuentes</a>
       <a href="/#bases" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Bases</a>
     </nav>
 
