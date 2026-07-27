@@ -1,7 +1,8 @@
 import type { APIRoute } from "astro"
 import { raffle } from "@/data/raffle"
 import { db, initDB } from "@/lib/db"
-import { reserveTicketsAtomic } from "@/lib/services/tickets"
+import { createMercadoPagoPreference, canCreateMercadoPagoPreference } from "@/lib/services/mercadopago"
+import { rejectOrderAndReleaseTickets, reserveTicketsAtomic } from "@/lib/services/tickets"
 
 export const prerender = false
 
@@ -10,6 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
     await initDB()
     const body = await request.json()
     const { tickets, selectedNumbers, sessionId, buyer, paymentMethod } = body
+    const selectedPaymentMethod = paymentMethod || "mercadopago"
 
     const count = Number(tickets)
     if (!count || count < 1) {
@@ -43,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
         String(buyer.phone),
         count,
         expectedAmount,
-        paymentMethod || "mercadopago",
+        selectedPaymentMethod,
         now,
       ],
     })
@@ -61,14 +63,64 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
+    let mpPreferenceId: string | null = null
+    let paymentUrl: string | null = null
+    let demoMode = false
+
+    if (selectedPaymentMethod === "mercadopago") {
+      if (canCreateMercadoPagoPreference()) {
+        try {
+          const preference = await createMercadoPagoPreference({
+            orderId,
+            buyer: {
+              name: String(buyer.name),
+              email: String(buyer.email),
+              dni: String(buyer.dni),
+              phone: String(buyer.phone),
+            },
+            tickets: reservation.numbers,
+            ticketCount: count,
+            totalAmount: expectedAmount,
+            reservedUntil: reservation.reservedUntil ?? now + 10 * 60 * 1000,
+            origin: new URL(request.url).origin,
+          })
+
+          mpPreferenceId = preference.id
+          paymentUrl = preference.initPoint
+
+          await db.execute({
+            sql: "UPDATE orders SET mp_preference_id = ? WHERE id = ?",
+            args: [mpPreferenceId, orderId],
+          })
+        } catch (error) {
+          await rejectOrderAndReleaseTickets(orderId, "MP_PREFERENCE_ERROR", { notifyBuyer: false })
+          console.error("Error creando preferencia de Mercado Pago:", error)
+          return new Response(
+            JSON.stringify({
+              error:
+                "No se pudo iniciar el pago con Mercado Pago. Verifica MERCADOPAGO_ACCESS_TOKEN y PUBLIC_SITE_URL.",
+            }),
+            { status: 502, headers: { "Content-Type": "application/json" } }
+          )
+        }
+      } else {
+        demoMode = true
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         orderId,
         tickets: reservation.numbers,
         amount: expectedAmount,
-        reservedUntil: now + 15 * 60 * 1000,
-        message: "Reserva realizada exitosamente por 15 minutos.",
+        reservedUntil: reservation.reservedUntil ?? now + 10 * 60 * 1000,
+        paymentUrl,
+        mpPreferenceId,
+        demoMode,
+        message: paymentUrl
+          ? "Reserva realizada. Redirigiendo a Mercado Pago."
+          : "Reserva realizada exitosamente.",
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     )

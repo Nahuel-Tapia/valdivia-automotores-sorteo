@@ -4,12 +4,26 @@ import { raffle } from "@/data/raffle"
 import { CheckCircle2, Mail, Home, Ticket } from "lucide-astro"
 import { Image } from "astro:assets"
 import logoValdivia from "@/assets/logo-valdivia.png"
+import { getMercadoPagoPaymentStatus } from "@/lib/services/mercadopago"
+import { processMercadoPagoPaymentStatus } from "@/lib/services/payment-processing"
+
+export const prerender = false
 
 const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
   day: "2-digit",
   month: "long",
   year: "numeric",
 })
+
+const paymentId = Astro.url.searchParams.get("payment_id")
+if (paymentId && process.env.MERCADOPAGO_ACCESS_TOKEN) {
+  try {
+    const payment = await getMercadoPagoPaymentStatus(paymentId)
+    await processMercadoPagoPaymentStatus(payment)
+  } catch (error) {
+    console.error("Error sincronizando retorno aprobado de Mercado Pago:", error)
+  }
+}
 ---
 
 <Layout title="Compra confirmada | Valdivia Automotores">

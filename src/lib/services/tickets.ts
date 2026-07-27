@@ -1,5 +1,5 @@
 import { db, initDB } from "@/lib/db"
-import { sendOrderConfirmationEmail } from "@/lib/services/email"
+import { sendOrderConfirmationEmail, sendPaymentRejectedEmail } from "@/lib/services/email"
 
 export interface TicketDBItem {
   number: string
@@ -153,7 +153,7 @@ export async function reserveTicketsAtomic(
   request: string[] | number,
   orderId: string,
   sessionId?: string
-): Promise<{ success: boolean; numbers: string[]; error?: string }> {
+): Promise<{ success: boolean; numbers: string[]; reservedUntil?: number; error?: string }> {
   await initDB()
   await cleanupExpiredReservations()
 
@@ -203,7 +203,7 @@ export async function reserveTicketsAtomic(
 
   await db.batch(statements, "write")
 
-  return { success: true, numbers: targetNumbers }
+  return { success: true, numbers: targetNumbers, reservedUntil }
 }
 
 /** Aprobar el pago de una orden y marcar sus tickets como 'paid' definitivamente */
@@ -212,22 +212,26 @@ export async function approveOrderAndTickets(orderId: string, mpPaymentId?: stri
   const now = Date.now()
 
   const orderCheck = await db.execute({
-    sql: "SELECT buyer_name, buyer_email, total_amount FROM orders WHERE id = ?",
+    sql: "SELECT buyer_name, buyer_email, total_amount, status FROM orders WHERE id = ?",
     args: [orderId],
   })
 
   if (orderCheck.rows.length === 0) return false
   const orderData = orderCheck.rows[0]
+  const orderStatus = String(orderData.status)
+
+  if (orderStatus === "approved") return true
+  if (orderStatus !== "pending") return false
 
   const orderRes = await db.execute({
-    sql: "UPDATE orders SET status = 'approved', mp_payment_id = ? WHERE id = ?",
+    sql: "UPDATE orders SET status = 'approved', mp_payment_id = ? WHERE id = ? AND status = 'pending'",
     args: [mpPaymentId ?? "SIMULATED_PAYMENT", orderId],
   })
 
   if (orderRes.rowsAffected === 0) return false
 
   await db.execute({
-    sql: "UPDATE tickets SET status = 'paid', reserved_until = NULL, session_id = NULL, updated_at = ? WHERE order_id = ?",
+    sql: "UPDATE tickets SET status = 'paid', reserved_until = NULL, session_id = NULL, updated_at = ? WHERE order_id = ? AND status = 'reserved'",
     args: [now, orderId],
   })
 
@@ -245,6 +249,60 @@ export async function approveOrderAndTickets(orderId: string, mpPaymentId?: stri
     tickets,
     totalAmount: Number(orderData.total_amount),
   }).catch((err) => console.error("Error asíncrono enviando email:", err))
+
+  return true
+}
+
+/** Rechazar el pago de una orden y liberar inmediatamente sus tickets reservados */
+export async function rejectOrderAndReleaseTickets(
+  orderId: string,
+  mpPaymentId?: string,
+  options: { notifyBuyer?: boolean } = {}
+): Promise<boolean> {
+  await initDB()
+  const now = Date.now()
+
+  const orderCheck = await db.execute({
+    sql: "SELECT buyer_name, buyer_email, total_amount, status FROM orders WHERE id = ?",
+    args: [orderId],
+  })
+
+  if (orderCheck.rows.length === 0) return false
+
+  const orderData = orderCheck.rows[0]
+  if (String(orderData.status) === "approved") {
+    return false
+  }
+
+  const ticketsRes = await db.execute({
+    sql: "SELECT number FROM tickets WHERE order_id = ? AND status = 'reserved' ORDER BY number ASC",
+    args: [orderId],
+  })
+  const tickets = ticketsRes.rows.map((r) => String(r.number))
+
+  const orderRes = await db.execute({
+    sql: "UPDATE orders SET status = 'rejected', mp_payment_id = ? WHERE id = ? AND status != 'approved'",
+    args: [mpPaymentId ?? "PAYMENT_REJECTED", orderId],
+  })
+
+  if (orderRes.rowsAffected === 0) return false
+
+  await db.execute({
+    sql: `UPDATE tickets
+          SET status = 'available', order_id = NULL, session_id = NULL, reserved_until = NULL, updated_at = ?
+          WHERE order_id = ? AND status = 'reserved'`,
+    args: [now, orderId],
+  })
+
+  if (tickets.length > 0 && options.notifyBuyer !== false) {
+    sendPaymentRejectedEmail({
+      orderId,
+      buyerName: String(orderData.buyer_name),
+      buyerEmail: String(orderData.buyer_email),
+      tickets,
+      totalAmount: Number(orderData.total_amount),
+    }).catch((err) => console.error("Error asincrono enviando email de rechazo:", err))
+  }
 
   return true
 }

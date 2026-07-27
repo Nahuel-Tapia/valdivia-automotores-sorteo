@@ -78,7 +78,7 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
         </div>
         <p class="mt-4 flex items-center gap-2 text-xs text-navy/50">
           <ShieldCheck class="h-4 w-4 text-brand" />
-          Demo: no se realizará ningún cobro real.
+          El pago se procesa de forma segura fuera del sitio.
         </p>
       </fieldset>
     </div>
@@ -201,22 +201,27 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
           return
         }
 
-        if (label) label.textContent = "Auto-aprobando pago seguro..."
-
-        // 2. Auto-aprobación del pago (Modo Demo / Auto-aprobación)
-        await fetch("/api/simulate-payment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: checkoutData.orderId }),
-        })
-
-        // 3. Guardar estado con el orderId devuelto por la DB real
         writeCart({
           ...cart,
           buyer: buyerData,
           // @ts-expect-error opcional para la vista
           orderId: checkoutData.orderId,
           ticketsList: checkoutData.tickets,
+        })
+
+        if (checkoutData.paymentUrl) {
+          if (label) label.textContent = "Redirigiendo a Mercado Pago..."
+          window.location.href = checkoutData.paymentUrl
+          return
+        }
+
+        if (label) label.textContent = "Auto-aprobando pago seguro..."
+
+        // Fallback demo local cuando Mercado Pago no esta configurado.
+        await fetch("/api/simulate-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: checkoutData.orderId }),
         })
 
         window.location.href = "/confirmacion"

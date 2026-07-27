@@ -24,6 +24,18 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Email and payments
+
+Copy `.env.example` to `.env.local` and configure:
+
+- `RESEND_API_KEY`: enables real transactional emails through Resend.
+- `MAIL_FROM`: verified sender used by Resend.
+- `MERCADOPAGO_ACCESS_TOKEN`: lets the Mercado Pago webhook verify payment status before approving or releasing tickets.
+- `PUBLIC_SITE_URL`: public production URL used for Mercado Pago return URLs and webhook notifications.
+
+If `RESEND_API_KEY` is not configured, the app runs in demo mode and logs email sends in the server console.
+If `MERCADOPAGO_ACCESS_TOKEN` is not configured, checkout keeps the local demo auto-approval flow.
+
 ## Learn More
 
 To learn more, take a look at the following resources:
