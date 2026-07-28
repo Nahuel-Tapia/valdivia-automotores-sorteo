@@ -11,7 +11,7 @@ export const raffle = {
   // Fecha del sorteo (usada para el countdown)
   drawDate: "2025-12-20T21:00:00-03:00",
   drawChannel: "Lotería Nacional",
-  ticketBasePrice: 200000,
+  ticketBasePrice: 30,
   currency: "ARS",
   soldPercentage: 68,
   totalNumbers: 200,
