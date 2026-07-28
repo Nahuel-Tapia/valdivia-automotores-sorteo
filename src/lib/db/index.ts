@@ -15,15 +15,22 @@ function getEnv(key: string): string | undefined {
   return undefined
 }
 
-// Asegurar que la carpeta data/ exista para SQLite local en desarrollo
-const dbDir = path.resolve(process.cwd(), "data")
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true })
-}
-
 const tursoUrl = getEnv("TURSO_DATABASE_URL")
 const authToken = getEnv("TURSO_AUTH_TOKEN")
-const url = tursoUrl || `file:${path.join(dbDir, "sorteo.db")}`
+
+// Solo intentar crear carpeta data local en desarrollo (ignorar en Vercel read-only filesystem)
+if (!tursoUrl) {
+  try {
+    const dbDir = path.resolve(process.cwd(), "data")
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true })
+    }
+  } catch {
+    // Ignorar en entornos de producción con sistema de archivos de solo lectura
+  }
+}
+
+const url = tursoUrl || `file:${path.resolve(process.cwd(), "data", "sorteo.db")}`
 
 export const db = createClient({
   url,
