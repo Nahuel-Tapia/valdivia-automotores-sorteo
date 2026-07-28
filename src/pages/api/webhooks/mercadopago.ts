@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
 import type { MercadoPagoPaymentStatus } from "@/lib/services/mercadopago"
-import { getMercadoPagoPaymentStatus } from "@/lib/services/mercadopago"
+import { getMercadoPagoPaymentStatus, getAccessToken } from "@/lib/services/mercadopago"
 import { processMercadoPagoPaymentStatus } from "@/lib/services/payment-processing"
 
 export const prerender = false
@@ -14,9 +14,6 @@ function getString(value: unknown): string | undefined {
 }
 
 async function readJsonBody(request: Request): Promise<Record<string, unknown>> {
-  const contentType = request.headers.get("content-type") || ""
-  if (!contentType.includes("application/json")) return {}
-
   try {
     return getObject(await request.json())
   } catch {
@@ -45,21 +42,20 @@ function getPaymentStatusFromBody(
 export const POST: APIRoute = async ({ request }) => {
   try {
     const urlParams = new URL(request.url).searchParams
-    const type = urlParams.get("type") || urlParams.get("topic")
     const paymentId = urlParams.get("data.id") || urlParams.get("id") || undefined
     const body = await readJsonBody(request)
 
-    if (type !== "payment" && !paymentId && Object.keys(body).length === 0) {
-      return new Response(JSON.stringify({ received: true, processed: "ignored" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      })
+    const token = getAccessToken()
+    let payment: MercadoPagoPaymentStatus = getPaymentStatusFromBody(body, paymentId)
+
+    const targetPaymentId = payment.id || paymentId
+    if (targetPaymentId && token) {
+      const fetchedPayment = await getMercadoPagoPaymentStatus(targetPaymentId)
+      if (fetchedPayment.orderId) payment.orderId = fetchedPayment.orderId
+      if (fetchedPayment.status) payment.status = fetchedPayment.status
     }
 
-    const payment =
-      paymentId && process.env.MERCADOPAGO_ACCESS_TOKEN
-        ? await getMercadoPagoPaymentStatus(paymentId)
-        : getPaymentStatusFromBody(body, paymentId)
+    console.log(`📡 Webhook recibido -> Payment #${payment.id || "N/A"} - Orden #${payment.orderId || "N/A"} - Estado: ${payment.status || "N/A"}`)
 
     const processed = await processMercadoPagoPaymentStatus(payment)
 

@@ -4,7 +4,7 @@ import { approveOrderAndTickets } from "@/lib/services/tickets"
 import fs from "node:fs"
 import path from "node:path"
 
-function getAccessToken(): string {
+export function getAccessToken(): string {
   try {
     const metaToken = (import.meta as any).env?.MERCADOPAGO_ACCESS_TOKEN
     if (metaToken) return String(metaToken)

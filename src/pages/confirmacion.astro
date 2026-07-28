@@ -4,7 +4,7 @@ import { raffle } from "@/data/raffle"
 import { CheckCircle2, Mail, Home, Ticket } from "lucide-astro"
 import { Image } from "astro:assets"
 import logoValdivia from "@/assets/logo-valdivia.png"
-import { getMercadoPagoPaymentStatus, processMercadoPagoPaymentStatus } from "@/lib/services/mercadopago"
+import { getMercadoPagoPaymentStatus, processMercadoPagoPaymentStatus, getAccessToken } from "@/lib/services/mercadopago"
 import { approveOrderAndTickets } from "@/lib/services/tickets"
 
 export const prerender = false
@@ -20,14 +20,20 @@ const paymentId = Astro.url.searchParams.get("payment_id") || Astro.url.searchPa
 const status = Astro.url.searchParams.get("status") || Astro.url.searchParams.get("collection_status")
 const orderId = Astro.url.searchParams.get("external_reference") || Astro.url.searchParams.get("orderId")
 
-if (paymentId && process.env.MERCADOPAGO_ACCESS_TOKEN) {
+const token = getAccessToken()
+
+if (paymentId && token) {
   try {
     const payment = await getMercadoPagoPaymentStatus(paymentId)
-    await processMercadoPagoPaymentStatus(payment)
+    if (payment.status === "approved") {
+      await processMercadoPagoPaymentStatus(payment)
+    } else if (orderId && status === "approved") {
+      await approveOrderAndTickets(orderId, paymentId)
+    }
   } catch (error) {
-    console.error("Error consultando API de Mercado Pago:", error)
+    console.error("Error consultando API de Mercado Pago en confirmación:", error)
   }
-} else if (orderId && status === "approved") {
+} else if (orderId && (status === "approved" || paymentId)) {
   try {
     await approveOrderAndTickets(orderId, paymentId || undefined)
   } catch (error) {
