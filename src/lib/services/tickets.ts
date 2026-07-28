@@ -223,15 +223,15 @@ export async function approveOrderAndTickets(orderId: string, mpPaymentId?: stri
   if (orderStatus === "approved") return true
   if (orderStatus !== "pending") return false
 
-  const orderRes = await db.execute({
-    sql: "UPDATE orders SET status = 'approved', mp_payment_id = ? WHERE id = ? AND status = 'pending'",
+  // 1. Actualizar orden a 'approved'
+  await db.execute({
+    sql: "UPDATE orders SET status = 'approved', mp_payment_id = ? WHERE id = ?",
     args: [mpPaymentId ?? "SIMULATED_PAYMENT", orderId],
   })
 
-  if (orderRes.rowsAffected === 0) return false
-
+  // 2. Marcar todos los boletos vinculados a esta orden como 'paid'
   await db.execute({
-    sql: "UPDATE tickets SET status = 'paid', reserved_until = NULL, session_id = NULL, updated_at = ? WHERE order_id = ? AND status = 'reserved'",
+    sql: "UPDATE tickets SET status = 'paid', reserved_until = NULL, session_id = NULL, updated_at = ? WHERE order_id = ?",
     args: [now, orderId],
   })
 

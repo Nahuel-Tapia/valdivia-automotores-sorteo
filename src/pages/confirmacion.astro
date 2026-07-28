@@ -25,15 +25,16 @@ const token = getAccessToken()
 if (paymentId && token) {
   try {
     const payment = await getMercadoPagoPaymentStatus(paymentId)
-    if (payment.status === "approved") {
-      await processMercadoPagoPaymentStatus(payment)
-    } else if (orderId && status === "approved") {
-      await approveOrderAndTickets(orderId, paymentId)
+    const targetOrder = payment.orderId || orderId
+    if (targetOrder && (payment.status === "approved" || status === "approved" || !status)) {
+      await approveOrderAndTickets(targetOrder, paymentId)
     }
   } catch (error) {
     console.error("Error consultando API de Mercado Pago en confirmación:", error)
   }
-} else if (orderId && (status === "approved" || paymentId)) {
+}
+
+if (orderId) {
   try {
     await approveOrderAndTickets(orderId, paymentId || undefined)
   } catch (error) {
