@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro"
-import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckCircle } from "lucide-astro"
+import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckCircle, Mail, Eye, X, Send } from "lucide-astro"
 ---
 
 <Layout title="Panel de Administración | Valdivia Automotores">
@@ -108,8 +108,8 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
             <Ticket class="h-5 w-5" />
           </span>
         </div>
-        <p class="mt-3 font-display text-2xl font-800 text-navy" id="m-available">10.000</p>
-        <p class="mt-1 text-xs text-navy/60">De 10.000 totales</p>
+        <p class="mt-3 font-display text-2xl font-800 text-navy" id="m-available">200</p>
+        <p class="mt-1 text-xs text-navy/60">De 200 totales</p>
       </div>
     </div>
 
@@ -118,7 +118,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
           <h2 class="font-display text-lg font-700 text-navy">Gestión de Órdenes y Participantes</h2>
-          <p class="text-xs text-navy/60">Buscá y gestioná las compras registradas en tiempo real</p>
+          <p class="text-xs text-navy/60">Tocá cualquier orden para ver los números asignados o re-enviar comprobantes</p>
         </div>
         <div class="relative w-full sm:w-64">
           <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy/40" />
@@ -141,7 +141,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
               <th class="pb-3">Boletos</th>
               <th class="pb-3">Monto</th>
               <th class="pb-3">Estado</th>
-              <th class="pb-3 text-right">Acción</th>
+              <th class="pb-3 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody id="orders-table-body" class="divide-y divide-navy/5 font-500">
@@ -150,6 +150,80 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Detalle Completo de Orden -->
+  <div id="order-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-navy/60 backdrop-blur-sm p-4">
+    <div class="relative w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl space-y-6">
+      <div class="flex items-center justify-between border-b border-navy/10 pb-4">
+        <div>
+          <span class="text-xs font-700 uppercase text-brand">Ficha del Participante</span>
+          <h3 id="modal-order-id" class="font-display text-xl font-800 text-navy">Orden #ORD-000000</h3>
+        </div>
+        <button type="button" id="modal-close-btn" class="rounded-lg p-1.5 text-navy/40 hover:bg-cloud hover:text-navy">
+          <X class="h-5 w-5" />
+        </button>
+      </div>
+
+      <!-- Datos del Comprador -->
+      <div class="grid grid-cols-2 gap-4 text-xs">
+        <div class="rounded-xl bg-cloud/60 p-3">
+          <span class="text-navy/50 font-600 block">Nombre del Comprador</span>
+          <strong id="modal-buyer-name" class="text-sm font-700 text-navy">--</strong>
+        </div>
+        <div class="rounded-xl bg-cloud/60 p-3">
+          <span class="text-navy/50 font-600 block">DNI / Documento</span>
+          <strong id="modal-buyer-dni" class="text-sm font-700 text-navy">--</strong>
+        </div>
+        <div class="rounded-xl bg-cloud/60 p-3">
+          <span class="text-navy/50 font-600 block">Correo Electrónico</span>
+          <strong id="modal-buyer-email" class="text-sm font-700 text-navy">--</strong>
+        </div>
+        <div class="rounded-xl bg-cloud/60 p-3">
+          <span class="text-navy/50 font-600 block">Teléfono / WhatsApp</span>
+          <strong id="modal-buyer-phone" class="text-sm font-700 text-navy">--</strong>
+        </div>
+      </div>
+
+      <!-- Estado y Pago -->
+      <div class="flex items-center justify-between border-t border-b border-navy/10 py-3 text-xs">
+        <div>
+          <span class="text-navy/50 font-600">Medio de Pago:</span>
+          <strong id="modal-payment-method" class="ml-1 uppercase text-navy font-700">--</strong>
+        </div>
+        <div>
+          <span class="text-navy/50 font-600">Monto Total:</span>
+          <strong id="modal-total-amount" class="ml-1 text-sm font-800 text-brand">--</strong>
+        </div>
+        <div id="modal-status-badge">
+          <!-- Badge dinámico -->
+        </div>
+      </div>
+
+      <!-- Grilla de Números de la Suerte Asignados -->
+      <div>
+        <h4 class="font-display text-xs font-700 uppercase tracking-wider text-navy/60 mb-2">Boletos de la Suerte Asignados</h4>
+        <div id="modal-tickets-grid" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 rounded-xl bg-cloud/50 border border-navy/10">
+          <span class="text-xs text-navy/40">Cargando boletos...</span>
+        </div>
+      </div>
+
+      <!-- Acciones de Gestión -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <button
+          type="button"
+          id="modal-resend-email-btn"
+          class="btn-secondary text-xs py-2.5 px-4 bg-brand/10 border-brand/20 text-brand hover:bg-brand hover:text-white transition font-700"
+        >
+          <Send class="h-4 w-4 inline mr-1" />
+          Re-enviar Comprobante por Email
+        </button>
+
+        <div id="modal-action-approve-container">
+          <!-- Botón aprobar si está pending -->
+        </div>
       </div>
     </div>
   </div>
@@ -165,6 +239,12 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     const logoutBtn = document.getElementById("btn-logout")
     const exportBtn = document.getElementById("btn-export-csv")
     const searchInput = document.getElementById("search-orders") as HTMLInputElement | null
+
+    // Elementos del Modal
+    const orderModal = document.getElementById("order-modal")
+    const modalCloseBtn = document.getElementById("modal-close-btn")
+    const resendEmailBtn = document.getElementById("modal-resend-email-btn")
+    let currentSelectedOrderId: string | null = null
 
     let allOrders: any[] = []
 
@@ -210,6 +290,36 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       ))
     })
 
+    modalCloseBtn?.addEventListener("click", () => {
+      orderModal?.classList.add("hidden")
+      orderModal?.classList.remove("flex")
+    })
+
+    resendEmailBtn?.addEventListener("click", async () => {
+      if (!currentSelectedOrderId) return
+      resendEmailBtn.setAttribute("disabled", "true")
+      resendEmailBtn.textContent = "Enviando correo..."
+
+      try {
+        const res = await fetch("/api/admin/resend-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: currentSelectedOrderId }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          alert(`✅ ${data.message}`)
+        } else {
+          alert(`❌ ${data.error || "No se pudo enviar el correo"}`)
+        }
+      } catch {
+        alert("Error de conexión al re-enviar correo.")
+      } finally {
+        resendEmailBtn.removeAttribute("disabled")
+        resendEmailBtn.innerHTML = `<svg class="h-4 w-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Re-enviar Comprobante por Email`
+      }
+    })
+
     async function showDashboard() {
       loginSec?.classList.add("hidden")
       dashSec?.classList.remove("hidden")
@@ -247,13 +357,13 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       tbody.innerHTML = orders
         .map(
           (o: any) => `
-        <tr class="hover:bg-cloud/50">
-          <td class="py-3 font-700 text-brand">${o.id}</td>
-          <td class="py-3 font-600 text-navy">${o.buyerName}</td>
-          <td class="py-3 text-navy/70">${o.buyerEmail}</td>
-          <td class="py-3 font-700 text-navy">${o.ticketCount}</td>
-          <td class="py-3 font-700 text-navy">${formatARS(o.totalAmount)}</td>
-          <td class="py-3">
+        <tr class="hover:bg-cloud/70 cursor-pointer group transition">
+          <td class="py-3 font-700 text-brand btn-view-detail" data-order="${o.id}">${o.id}</td>
+          <td class="py-3 font-600 text-navy btn-view-detail" data-order="${o.id}">${o.buyerName}</td>
+          <td class="py-3 text-navy/70 btn-view-detail" data-order="${o.id}">${o.buyerEmail}</td>
+          <td class="py-3 font-700 text-navy btn-view-detail" data-order="${o.id}">${o.ticketCount}</td>
+          <td class="py-3 font-700 text-navy btn-view-detail" data-order="${o.id}">${formatARS(o.totalAmount)}</td>
+          <td class="py-3 btn-view-detail" data-order="${o.id}">
             <span class="rounded-full px-2.5 py-1 text-xs font-800 ${
               o.status === "approved"
                 ? "bg-green-100 text-green-700"
@@ -265,10 +375,13 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
             </span>
           </td>
           <td class="py-3 text-right">
+            <button data-order="${o.id}" class="btn-view-detail rounded-lg bg-navy/10 px-2.5 py-1 text-xs font-700 text-navy hover:bg-navy hover:text-white transition">
+              Ver Detalle
+            </button>
             ${
               o.status === "pending"
-                ? `<button data-order="${o.id}" class="btn-approve-order inline-flex items-center gap-1 rounded-lg bg-brand px-2.5 py-1 text-xs font-700 text-white hover:bg-brand-dark">Aprobar</button>`
-                : `<span class="text-xs text-navy/40">Ok</span>`
+                ? `<button data-order="${o.id}" class="btn-approve-order ml-1 rounded-lg bg-brand px-2.5 py-1 text-xs font-700 text-white hover:bg-brand-dark">Aprobar</button>`
+                : ""
             }
           </td>
         </tr>
@@ -276,31 +389,118 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         )
         .join("")
 
-      // Asignar handlers a botones de aprobación manual
-      tbody.querySelectorAll(".btn-approve-order").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const orderId = (btn as HTMLElement).dataset.order
-          if (!orderId) return
-          if (!confirm(`¿Confirmás la aprobación manual del pago de la orden #${orderId}?`)) return
-
-          try {
-            const res = await fetch("/api/admin/approve-order", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ orderId }),
-            })
-            const data = await res.json()
-            if (data.success) {
-              alert("Orden aprobada exitosamente y correo enviado.")
-              showDashboard()
-            } else {
-              alert(data.error || "No se pudo aprobar la orden")
-            }
-          } catch {
-            alert("Error de red al aprobar orden")
-          }
+      // Handlers de Detalle
+      tbody.querySelectorAll(".btn-view-detail").forEach((el) => {
+        el.addEventListener("click", () => {
+          const orderId = (el as HTMLElement).dataset.order
+          if (orderId) openOrderDetailModal(orderId)
         })
       })
+
+      // Handlers de Aprobación
+      tbody.querySelectorAll(".btn-approve-order").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation()
+          const orderId = (btn as HTMLElement).dataset.order
+          if (orderId) approveOrder(orderId)
+        })
+      })
+    }
+
+    async function openOrderDetailModal(orderId: string) {
+      currentSelectedOrderId = orderId
+      orderModal?.classList.remove("hidden")
+      orderModal?.classList.add("flex")
+
+      document.getElementById("modal-order-id")!.textContent = `Orden #${orderId}`
+      document.getElementById("modal-tickets-grid")!.innerHTML = `<span class="text-xs text-navy/40">Cargando boletos...</span>`
+
+      try {
+        const res = await fetch(`/api/admin/order-details?orderId=${orderId}`)
+        const data = await res.json()
+
+        if (!data.success) {
+          alert(data.error || "No se pudo consultar el detalle de la orden.")
+          return
+        }
+
+        const o = data.order
+        document.getElementById("modal-buyer-name")!.textContent = o.buyerName
+        document.getElementById("modal-buyer-dni")!.textContent = o.buyerDni
+        document.getElementById("modal-buyer-email")!.textContent = o.buyerEmail
+        document.getElementById("modal-buyer-phone")!.textContent = o.buyerPhone
+        document.getElementById("modal-payment-method")!.textContent = o.paymentMethod
+        document.getElementById("modal-total-amount")!.textContent = formatARS(o.totalAmount)
+
+        const badgeContainer = document.getElementById("modal-status-badge")!
+        badgeContainer.innerHTML = `
+          <span class="rounded-full px-3 py-1 text-xs font-800 ${
+            o.status === "approved"
+              ? "bg-green-100 text-green-700"
+              : o.status === "pending"
+              ? "bg-amber-100 text-amber-700"
+              : "bg-red-100 text-red-700"
+          }">
+            ${o.status.toUpperCase()}
+          </span>
+        `
+
+        // Grid de boletos
+        const ticketsGrid = document.getElementById("modal-tickets-grid")!
+        if (data.tickets.length === 0) {
+          ticketsGrid.innerHTML = `<span class="text-xs text-navy/40">Sin boletos asignados</span>`
+        } else {
+          ticketsGrid.innerHTML = data.tickets
+            .map(
+              (t: any) => `
+            <span class="rounded-lg bg-navy text-gold px-2.5 py-1 font-display text-xs font-800 shadow-sm border border-navy/20">
+              #${t.number}
+            </span>
+          `
+            )
+            .join("")
+        }
+
+        // Botón Aprobar en modal
+        const approveContainer = document.getElementById("modal-action-approve-container")!
+        if (o.status === "pending") {
+          approveContainer.innerHTML = `
+            <button type="button" class="btn-modal-approve btn-primary text-xs py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-700">
+              Aprobar Pago Ahora
+            </button>
+          `
+          approveContainer.querySelector(".btn-modal-approve")?.addEventListener("click", () => {
+            approveOrder(orderId)
+          })
+        } else {
+          approveContainer.innerHTML = ""
+        }
+      } catch (err) {
+        console.error("Error abriendo modal:", err)
+      }
+    }
+
+    async function approveOrder(orderId: string) {
+      if (!confirm(`¿Confirmás la aprobación manual del pago de la orden #${orderId}?`)) return
+
+      try {
+        const res = await fetch("/api/admin/approve-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          alert("✅ Orden aprobada exitosamente y comprobante enviado por email.")
+          orderModal?.classList.add("hidden")
+          orderModal?.classList.remove("flex")
+          showDashboard()
+        } else {
+          alert(data.error || "No se pudo aprobar la orden")
+        }
+      } catch {
+        alert("Error de red al aprobar la orden.")
+      }
     }
   }
 

@@ -1,19 +1,13 @@
 /* empty css                                 */
 import { c as createComponent, r as renderComponent, m as maybeRenderHead, a as renderTemplate, b as createAstro, d as renderScript, e as addAttribute } from '../chunks/astro/server_DaRN7h1c.mjs';
 import 'piccolore';
-import { $ as $$, a as $$Layout } from '../chunks/Layout_BQx7d89A.mjs';
-import { f as formatCurrency, r as raffle } from '../chunks/raffle_DbkFDE3I.mjs';
-import { b as getDBTickets } from '../chunks/tickets_DnGCFJIk.mjs';
-import { $ as $$Search } from '../chunks/Search_DRijNmjT.mjs';
-import { $ as $$ArrowRight } from '../chunks/ArrowRight_DHpL23vW.mjs';
+import { $ as $$, a as $$Layout } from '../chunks/Layout_LZPCddmC.mjs';
+import { f as formatCurrency, r as raffle } from '../chunks/raffle_BobqFDMx.mjs';
+import { d as getDBTickets } from '../chunks/tickets_B79piL2P.mjs';
+import { $ as $$Clock } from '../chunks/Clock_CqhvcQdD.mjs';
+import { $ as $$Search } from '../chunks/Search_DJgzmcW-.mjs';
+import { $ as $$ArrowRight } from '../chunks/ArrowRight_B_SKFrTw.mjs';
 export { renderers } from '../renderers.mjs';
-
-const $$Astro$1 = createAstro();
-const $$Clock = createComponent(($$result, $$props, $$slots) => {
-  const Astro2 = $$result.createAstro($$Astro$1, $$props, $$slots);
-  Astro2.self = $$Clock;
-  return renderTemplate`${renderComponent($$result, "Layout", $$, { "iconName": "clock", ...Astro2.props }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<circle cx="12" cy="12" r="10"></circle> <polyline points="12 6 12 12 16 14"></polyline> ` })}`;
-}, "C:/Users/Docente/Documents/valdivia-automotores-sorteo/node_modules/lucide-astro/dist/Clock.astro", void 0);
 
 const $$Astro = createAstro();
 const $$Shuffle = createComponent(($$result, $$props, $$slots) => {
@@ -23,7 +17,7 @@ const $$Shuffle = createComponent(($$result, $$props, $$slots) => {
 }, "C:/Users/Docente/Documents/valdivia-automotores-sorteo/node_modules/lucide-astro/dist/Shuffle.astro", void 0);
 
 const $$Participar = createComponent(async ($$result, $$props, $$slots) => {
-  const initialTickets = await getDBTickets("", "all", 60);
+  const initialTickets = await getDBTickets("", "all", 200);
   return renderTemplate`${renderComponent($$result, "Layout", $$Layout, { "title": "Reserva de N\xFAmeros Estilo Cine | Valdivia Automotores" }, { "default": async ($$result2) => renderTemplate` ${maybeRenderHead()}<section class="bg-navy py-10 text-white"> <div class="container-app"> <span class="text-sm font-semibold uppercase tracking-[0.16em] text-brand-light">Paso 1 de 3</span> <h1 class="mt-2 font-display text-3xl font-800 sm:text-4xl">Reservá tus números en tiempo real</h1> <p class="mt-2 max-w-xl text-white/75">
 Elegí tus boletos en la grilla estilo las butacas de un cine. Los números que selecciones quedarán **congelados exclusivamente para vos** durante 10 minutos.
 </p> </div> </section>  <div id="reservation-timer-bar" class="hidden bg-brand py-3 text-white shadow-md sticky top-16 z-40"> <div class="container-app flex flex-wrap items-center justify-between gap-3 text-sm font-700"> <div class="flex items-center gap-2"> ${renderComponent($$result2, "Clock", $$Clock, { "class": "h-5 w-5 animate-pulse text-gold" })} <span>Reserva activa: <strong id="selected-count-badge">0</strong> boletos congelados</span> </div> <div class="flex items-center gap-2 rounded-lg bg-navy px-3 py-1 text-gold font-display text-base"> <span>Expira en:</span> <span id="countdown-timer">09:59</span> </div> </div> </div> <div class="container-app grid gap-8 py-10 lg:grid-cols-[1fr_360px]"> <!-- Contenido Izquierdo: Mapa de Boletos --> <div class="space-y-6"> <div class="card p-6"> <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"> <div> <h2 class="font-display text-lg font-700 text-navy">Selección de Butacas / Boletos</h2> <p class="text-xs text-navy/60">Tocá cualquier casilla verde para congelarla inmediatamente</p> </div> <button type="button" id="btn-random" class="btn-secondary text-sm py-2 px-3"> ${renderComponent($$result2, "Shuffle", $$Shuffle, { "class": "h-4 w-4 text-brand" })}

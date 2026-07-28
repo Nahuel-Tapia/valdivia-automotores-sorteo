@@ -1,4 +1,4 @@
-import { a as approveOrderAndTickets } from '../../../chunks/tickets_DnGCFJIk.mjs';
+import { a as approveOrderAndTickets } from '../../../chunks/tickets_B79piL2P.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const prerender = false;

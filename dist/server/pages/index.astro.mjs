@@ -1,26 +1,32 @@
 /* empty css                                 */
 import { c as createComponent, r as renderComponent, a as renderTemplate, b as createAstro, m as maybeRenderHead, e as addAttribute, d as renderScript } from '../chunks/astro/server_DaRN7h1c.mjs';
 import 'piccolore';
-import { $ as $$, c as $$Ticket, d as $$ShieldCheck, a as $$Layout } from '../chunks/Layout_BQx7d89A.mjs';
-import { r as raffle, f as formatCurrency } from '../chunks/raffle_DbkFDE3I.mjs';
+import { $ as $$, c as $$Ticket, d as $$ShieldCheck, a as $$Layout } from '../chunks/Layout_LZPCddmC.mjs';
+import { r as raffle, f as formatCurrency } from '../chunks/raffle_BobqFDMx.mjs';
 import 'clsx';
 import { $ as $$Image } from '../chunks/_astro_assets_4TwwqjQN.mjs';
-import { $ as $$CreditCard } from '../chunks/CreditCard_CyiVDzgR.mjs';
 export { renderers } from '../renderers.mjs';
 
-const $$Astro$8 = createAstro();
+const $$Astro$9 = createAstro();
 const $$ChevronDown = createComponent(($$result, $$props, $$slots) => {
-  const Astro2 = $$result.createAstro($$Astro$8, $$props, $$slots);
+  const Astro2 = $$result.createAstro($$Astro$9, $$props, $$slots);
   Astro2.self = $$ChevronDown;
   return renderTemplate`${renderComponent($$result, "Layout", $$, { "iconName": "chevron-down", ...Astro2.props }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<path d="m6 9 6 6 6-6"></path> ` })}`;
 }, "C:/Users/Docente/Documents/valdivia-automotores-sorteo/node_modules/lucide-astro/dist/ChevronDown.astro", void 0);
 
-const $$Astro$7 = createAstro();
+const $$Astro$8 = createAstro();
 const $$Cog = createComponent(($$result, $$props, $$slots) => {
-  const Astro2 = $$result.createAstro($$Astro$7, $$props, $$slots);
+  const Astro2 = $$result.createAstro($$Astro$8, $$props, $$slots);
   Astro2.self = $$Cog;
   return renderTemplate`${renderComponent($$result, "Layout", $$, { "iconName": "cog", ...Astro2.props }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"></path> <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path> <path d="M12 2v2"></path> <path d="M12 22v-2"></path> <path d="m17 20.66-1-1.73"></path> <path d="M11 10.27 7 3.34"></path> <path d="m20.66 17-1.73-1"></path> <path d="m3.34 7 1.73 1"></path> <path d="M14 12h8"></path> <path d="M2 12h2"></path> <path d="m20.66 7-1.73 1"></path> <path d="m3.34 17 1.73-1"></path> <path d="m17 3.34-1 1.73"></path> <path d="m11 13.73-4 6.93"></path> ` })}`;
 }, "C:/Users/Docente/Documents/valdivia-automotores-sorteo/node_modules/lucide-astro/dist/Cog.astro", void 0);
+
+const $$Astro$7 = createAstro();
+const $$CreditCard = createComponent(($$result, $$props, $$slots) => {
+  const Astro2 = $$result.createAstro($$Astro$7, $$props, $$slots);
+  Astro2.self = $$CreditCard;
+  return renderTemplate`${renderComponent($$result, "Layout", $$, { "iconName": "credit-card", ...Astro2.props }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<rect width="20" height="14" x="2" y="5" rx="2"></rect> <line x1="2" x2="22" y1="10" y2="10"></line> ` })}`;
+}, "C:/Users/Docente/Documents/valdivia-automotores-sorteo/node_modules/lucide-astro/dist/CreditCard.astro", void 0);
 
 const $$Astro$6 = createAstro();
 const $$FileCheck = createComponent(($$result, $$props, $$slots) => {

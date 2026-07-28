@@ -21,27 +21,73 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
     <a href="/participar" class="btn-primary mt-6">Elegir mis números</a>
   </div>
 
-  <form id="checkout-form" class="container-app grid gap-8 py-12 lg:grid-cols-[1fr_360px]">
+  <form id="checkout-form" class="container-app grid gap-8 py-12 lg:grid-cols-[1fr_360px]" novalidate>
     <div class="space-y-8">
-      <!-- Datos -->
+      <!-- Datos del comprador -->
       <fieldset class="card p-6">
-        <legend class="px-2 font-display text-lg font-700 text-navy">Tus datos</legend>
+        <legend class="px-2 font-display text-lg font-700 text-navy">Tus datos personales</legend>
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <!-- Nombre Completo (Solo letras, máx 80) -->
           <label class="block">
             <span class="text-sm font-600 text-navy/70">Nombre completo</span>
-            <input required name="name" type="text" class="input" placeholder="Juan Pérez" />
+            <input
+              required
+              id="input-name"
+              name="name"
+              type="text"
+              maxlength="80"
+              class="input"
+              placeholder="Ej: Juan Carlos Pérez"
+            />
+            <span id="err-name" class="mt-1 hidden text-xs font-600 text-red-600">Solo se permiten letras (máximo 80 caracteres)</span>
           </label>
+
+          <!-- DNI (Exactamente 8 dígitos) -->
           <label class="block">
-            <span class="text-sm font-600 text-navy/70">DNI</span>
-            <input required name="dni" type="text" inputmode="numeric" class="input" placeholder="30.123.456" />
+            <span class="text-sm font-600 text-navy/70">DNI (8 números)</span>
+            <input
+              required
+              id="input-dni"
+              name="dni"
+              type="text"
+              inputmode="numeric"
+              maxlength="8"
+              minlength="8"
+              class="input"
+              placeholder="Ej: 40123456"
+            />
+            <span id="err-dni" class="mt-1 hidden text-xs font-600 text-red-600">El DNI debe tener exactamente 8 números</span>
           </label>
+
+          <!-- Email (Formato correo con @ y .com) -->
           <label class="block">
             <span class="text-sm font-600 text-navy/70">Email</span>
-            <input required name="email" type="email" class="input" placeholder="juan@email.com" />
+            <input
+              required
+              id="input-email"
+              name="email"
+              type="email"
+              class="input"
+              placeholder="Ej: juan.perez@gmail.com"
+            />
+            <span id="err-email" class="mt-1 hidden text-xs font-600 text-red-600">Formato inválido (debe contener @ y .com)</span>
           </label>
+
+          <!-- Teléfono (Entre 9 y 11 números) -->
           <label class="block">
-            <span class="text-sm font-600 text-navy/70">Teléfono</span>
-            <input required name="phone" type="tel" class="input" placeholder="11 5555 5555" />
+            <span class="text-sm font-600 text-navy/70">Teléfono (9 a 11 números)</span>
+            <input
+              required
+              id="input-phone"
+              name="phone"
+              type="tel"
+              inputmode="numeric"
+              maxlength="11"
+              minlength="9"
+              class="input"
+              placeholder="Ej: 1155554444"
+            />
+            <span id="err-phone" class="mt-1 hidden text-xs font-600 text-red-600">Debe contener entre 9 y 11 números</span>
           </label>
         </div>
       </fieldset>
@@ -55,30 +101,38 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
             <Wallet class="h-6 w-6 text-brand" />
             <span class="flex-1">
               <span class="block font-700 text-navy">Mercado Pago</span>
-              <span class="block text-sm text-navy/60">Dinero en cuenta, tarjetas y más</span>
+              <span class="block text-sm text-navy/60">Dinero en cuenta, tarjetas de crédito/débito y Rapipago/PagoFácil</span>
             </span>
-            <span class="rounded-md bg-[#009ee3] px-2 py-1 text-xs font-800 text-white">MP</span>
+            <span class="rounded-md bg-[#009ee3] px-2.5 py-1 text-xs font-800 text-white">MP</span>
           </label>
           <label class="pay-method flex cursor-pointer items-center gap-4 rounded-xl border-2 border-navy/10 p-4">
-            <input type="radio" name="pay" value="card" class="h-4 w-4 accent-brand" />
-            <CreditCard class="h-6 w-6 text-navy/70" />
-            <span class="flex-1">
-              <span class="block font-700 text-navy">Tarjeta de crédito/débito</span>
-              <span class="block text-sm text-navy/60">Visa, Mastercard, Amex</span>
-            </span>
-          </label>
-          <label class="pay-method flex cursor-pointer items-center gap-4 rounded-xl border-2 border-navy/10 p-4">
-            <input type="radio" name="pay" value="transfer" class="h-4 w-4 accent-brand" />
+            <input type="radio" name="pay" value="transferencia" class="h-4 w-4 accent-brand" />
             <Landmark class="h-6 w-6 text-navy/70" />
             <span class="flex-1">
-              <span class="block font-700 text-navy">Transferencia bancaria</span>
-              <span class="block text-sm text-navy/60">CBU / Alias</span>
+              <span class="block font-700 text-navy">Transferencia Bancaria Directa</span>
+              <span class="block text-sm text-navy/60">CBU / Alias oficial con validación manual</span>
             </span>
           </label>
         </div>
+
+        <!-- Bloque informativo de CBU/Alias (oculto por defecto) -->
+        <div id="transfer-info" class="hidden mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs space-y-2 text-amber-950">
+          <p class="font-700 text-sm text-amber-900">🏦 Datos para la Transferencia Bancaria:</p>
+          <div class="grid grid-cols-2 gap-2 font-mono">
+            <div><strong>Banco:</strong> Banco Galicia</div>
+            <div><strong>Titular:</strong> Valdivia Automotores S.A.</div>
+            <div><strong>Alias:</strong> VALDIVIA.SORTEO.MP</div>
+            <div><strong>CUIT:</strong> 30-71234567-8</div>
+            <div class="col-span-2"><strong>CBU:</strong> 0070123420000012345678</div>
+          </div>
+          <p class="text-[11px] text-amber-800/80 pt-1 border-t border-amber-200">
+            Al confirmar la orden, tus boletos quedarán reservados y recibirás las instrucciones por correo. El pago será verificado en el panel de administración.
+          </p>
+        </div>
+
         <p class="mt-4 flex items-center gap-2 text-xs text-navy/50">
           <ShieldCheck class="h-4 w-4 text-brand" />
-          El pago se procesa de forma segura fuera del sitio.
+          Procesamiento cifrado con certificado de seguridad SSL.
         </p>
       </fieldset>
     </div>
@@ -86,10 +140,10 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
     <!-- Resumen -->
     <aside class="lg:sticky lg:top-24 lg:self-start">
       <div class="card p-6">
-        <h3 class="font-display text-lg font-700 text-navy">Resumen</h3>
+        <h3 class="font-display text-lg font-700 text-navy">Resumen de tu compra</h3>
         <dl class="mt-4 space-y-3 text-sm">
           <div class="flex items-center justify-between">
-            <dt class="text-navy/60">Números</dt>
+            <dt class="text-navy/60">Números elegidos</dt>
             <dd class="font-700 text-navy" id="c-qty">-</dd>
           </div>
           <div class="flex items-center justify-between">
@@ -98,7 +152,7 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
           </div>
           <div class="h-px bg-navy/10"></div>
           <div class="flex items-center justify-between">
-            <dt class="font-display text-base font-700 text-navy">Total</dt>
+            <dt class="font-display text-base font-700 text-navy">Total a abonar</dt>
             <dd class="font-display text-2xl font-800 text-brand" id="c-total">-</dd>
           </div>
         </dl>
@@ -106,7 +160,7 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
           <span id="pay-label">Pagar con Mercado Pago</span>
           <ArrowRight class="h-5 w-5" />
         </button>
-        <p class="mt-3 text-center text-xs text-navy/50">Al pagar aceptás las bases y condiciones.</p>
+        <p class="mt-3 text-center text-xs text-navy/50">Al continuar aceptás las bases y condiciones legales del sorteo.</p>
       </div>
     </aside>
   </form>
@@ -125,6 +179,7 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
     const cart = readCart()
     const form = document.getElementById("checkout-form") as HTMLFormElement | null
     const empty = document.getElementById("empty-state")
+    const transferInfo = document.getElementById("transfer-info")
 
     if (!cart || cart.tickets < 1) {
       form?.classList.add("hidden")
@@ -139,14 +194,44 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
     if (sub) sub.textContent = formatARS(cart.amount)
     if (total) total.textContent = formatARS(cart.amount)
 
-    // Resaltar método seleccionado
+    // Elementos de Entrada
+    const inputName = document.getElementById("input-name") as HTMLInputElement
+    const inputDni = document.getElementById("input-dni") as HTMLInputElement
+    const inputEmail = document.getElementById("input-email") as HTMLInputElement
+    const inputPhone = document.getElementById("input-phone") as HTMLInputElement
+
+    const errName = document.getElementById("err-name")
+    const errDni = document.getElementById("err-dni")
+    const errEmail = document.getElementById("err-email")
+    const errPhone = document.getElementById("err-phone")
+
+    // Sanitización en tiempo real
+    inputName?.addEventListener("input", () => {
+      inputName.value = inputName.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "").slice(0, 80)
+      if (errName) errName.classList.add("hidden")
+    })
+
+    inputDni?.addEventListener("input", () => {
+      inputDni.value = inputDni.value.replace(/\D/g, "").slice(0, 8)
+      if (errDni) errDni.classList.add("hidden")
+    })
+
+    inputEmail?.addEventListener("input", () => {
+      if (errEmail) errEmail.classList.add("hidden")
+    })
+
+    inputPhone?.addEventListener("input", () => {
+      inputPhone.value = inputPhone.value.replace(/\D/g, "").slice(0, 11)
+      if (errPhone) errPhone.classList.add("hidden")
+    })
+
     const methods = Array.from(document.querySelectorAll<HTMLElement>(".pay-method"))
     const payLabel = document.getElementById("pay-label")
     const labels: Record<string, string> = {
       mercadopago: "Pagar con Mercado Pago",
-      card: "Pagar con tarjeta",
-      transfer: "Confirmar transferencia",
+      transferencia: "Confirmar orden por Transferencia",
     }
+
     const syncMethods = () => {
       methods.forEach((m) => {
         const input = m.querySelector<HTMLInputElement>('input[type="radio"]')
@@ -154,7 +239,15 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
         m.classList.toggle("border-brand", !!active)
         m.classList.toggle("bg-brand/5", !!active)
         m.classList.toggle("border-navy/10", !active)
-        if (active && payLabel) payLabel.textContent = labels[input!.value] ?? "Pagar"
+
+        if (active) {
+          if (payLabel) payLabel.textContent = labels[input!.value] ?? "Pagar"
+          if (input!.value === "transferencia") {
+            transferInfo?.classList.remove("hidden")
+          } else {
+            transferInfo?.classList.add("hidden")
+          }
+        }
       })
     }
     methods.forEach((m) => m.addEventListener("change", syncMethods))
@@ -162,24 +255,73 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
 
     form?.addEventListener("submit", async (e) => {
       e.preventDefault()
+      let isValid = true
+      const allInputs = [inputName, inputDni, inputEmail, inputPhone]
+      const allErrors = [errName, errDni, errEmail, errPhone]
+
+      // Limpiar estilos de error previos
+      allInputs.forEach(i => i?.classList.remove("!border-red-500", "!ring-red-200"))
+      allErrors.forEach(e => e?.classList.add("hidden"))
+
+      // 1. Validar Nombre (solo letras, máx 80)
+      const nameVal = inputName.value.trim()
+      const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,80}$/
+      if (!nameRegex.test(nameVal)) {
+        errName?.classList.remove("hidden")
+        inputName?.classList.add("!border-red-500", "!ring-red-200")
+        isValid = false
+      }
+
+      // 2. Validar DNI (exactamente 8 números)
+      const dniVal = inputDni.value.replace(/\D/g, "")
+      if (dniVal.length !== 8) {
+        errDni?.classList.remove("hidden")
+        inputDni?.classList.add("!border-red-500", "!ring-red-200")
+        isValid = false
+      }
+
+      // 3. Validar Email (debe incluir @ y dominio válido)
+      const emailVal = inputEmail.value.trim()
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}(\.[a-zA-Z]{2,})?$/
+      if (!emailRegex.test(emailVal)) {
+        errEmail?.classList.remove("hidden")
+        inputEmail?.classList.add("!border-red-500", "!ring-red-200")
+        isValid = false
+      }
+
+      // 4. Validar Teléfono (entre 9 y 11 números)
+      const phoneVal = inputPhone.value.replace(/\D/g, "")
+      if (phoneVal.length < 9 || phoneVal.length > 11) {
+        errPhone?.classList.remove("hidden")
+        inputPhone?.classList.add("!border-red-500", "!ring-red-200")
+        isValid = false
+      }
+
+      if (!isValid) {
+        // Scroll al primer campo con error
+        const firstError = document.querySelector(".\\!border-red-500") as HTMLElement
+        firstError?.scrollIntoView({ behavior: "smooth", block: "center" })
+        firstError?.focus()
+        return
+      }
+
       const btn = document.getElementById("pay-btn") as HTMLButtonElement | null
       const label = document.getElementById("pay-label")
       const fd = new FormData(form)
 
       if (btn) btn.disabled = true
-      if (label) label.textContent = "Reservando boletos en el servidor..."
+      if (label) label.textContent = "Procesando orden de reserva..."
       if (btn) btn.classList.add("opacity-70")
 
       const buyerData = {
-        name: String(fd.get("name") ?? ""),
-        email: String(fd.get("email") ?? ""),
+        name: nameVal,
+        email: emailVal,
         method: String(fd.get("pay") ?? ""),
-        dni: String(fd.get("dni") ?? ""),
-        phone: String(fd.get("phone") ?? ""),
+        dni: dniVal,
+        phone: phoneVal,
       }
 
       try {
-        // 1. Llamada al endpoint del servidor para crear la orden y reservar tickets
         const checkoutRes = await fetch("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -209,22 +351,13 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
           ticketsList: checkoutData.tickets,
         })
 
-        if (checkoutData.paymentUrl) {
-          if (label) label.textContent = "Redirigiendo a Mercado Pago..."
-          window.location.href = checkoutData.paymentUrl
+        if (checkoutData.initPoint) {
+          if (label) label.textContent = checkoutData.isDemo ? "Redirigiendo a Mercado Pago Demo..." : "Redirigiendo a Mercado Pago Oficial..."
+          window.location.href = checkoutData.initPoint
           return
         }
 
-        if (label) label.textContent = "Auto-aprobando pago seguro..."
-
-        // Fallback demo local cuando Mercado Pago no esta configurado.
-        await fetch("/api/simulate-payment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: checkoutData.orderId }),
-        })
-
-        window.location.href = "/confirmacion"
+        window.location.href = `/confirmacion?orderId=${checkoutData.orderId}`
       } catch (err) {
         console.error("Error en checkout:", err)
         alert("Ocurrió un error al comunicarse con el servidor.")

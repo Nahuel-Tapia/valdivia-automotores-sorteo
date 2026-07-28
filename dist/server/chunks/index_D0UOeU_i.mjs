@@ -3,12 +3,25 @@ import bcrypt from 'bcryptjs';
 import fs from 'node:fs';
 import path from 'node:path';
 
+const __vite_import_meta_env__ = {"ASSETS_PREFIX": undefined, "BASE_URL": "/", "DEV": false, "MODE": "production", "PROD": true, "SITE": undefined, "SSR": true};
+function getEnv(key) {
+  try {
+    const metaVal = Object.assign(__vite_import_meta_env__, { TURSO_DATABASE_URL: "", TURSO_AUTH_TOKEN: "" })?.[key];
+    if (metaVal) return String(metaVal);
+  } catch {
+  }
+  if (typeof process !== "undefined" && process.env?.[key]) {
+    return process.env[key];
+  }
+  return void 0;
+}
 const dbDir = path.resolve(process.cwd(), "data");
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
-const url = process.env.TURSO_DATABASE_URL || `file:${path.join(dbDir, "sorteo.db")}`;
-const authToken = process.env.TURSO_AUTH_TOKEN;
+const tursoUrl = getEnv("TURSO_DATABASE_URL");
+const authToken = getEnv("TURSO_AUTH_TOKEN");
+const url = tursoUrl || `file:${path.join(dbDir, "sorteo.db")}`;
 const db = createClient({
   url,
   authToken
@@ -35,9 +48,7 @@ async function initDB() {
         ticket_count INTEGER NOT NULL,
         total_amount REAL NOT NULL,
         status TEXT NOT NULL, -- 'pending', 'approved', 'rejected'
-        payment_method TEXT NOT NULL,
-        mp_preference_id TEXT,
-        mp_payment_id TEXT,
+        payment_method TEXT NOT NULL, -- 'mercadopago', 'transferencia'
         created_at INTEGER NOT NULL
       );
     `);
@@ -52,10 +63,6 @@ async function initDB() {
         FOREIGN KEY (order_id) REFERENCES orders(id)
       );
     `);
-    try {
-      await db.execute("ALTER TABLE tickets ADD COLUMN session_id TEXT;");
-    } catch {
-    }
     const adminCheck = await db.execute("SELECT COUNT(*) as count FROM admins");
     if (Number(adminCheck.rows[0].count) === 0) {
       const hash = await bcrypt.hash("admin123", 10);
@@ -67,25 +74,22 @@ async function initDB() {
     }
     const ticketCheck = await db.execute("SELECT COUNT(*) as count FROM tickets");
     if (Number(ticketCheck.rows[0].count) === 0) {
-      console.log("⏳ Inicializando 10.000 números de sorteo en la base de datos...");
-      const BATCH_SIZE = 500;
+      console.log("⏳ Inicializando 200 números de sorteo en la base de datos...");
       const now = Date.now();
-      for (let i = 1; i <= 1e4; i += BATCH_SIZE) {
-        const statements = [];
-        for (let j = i; j < i + BATCH_SIZE && j <= 1e4; j++) {
-          const numStr = String(j).padStart(5, "0");
-          statements.push({
-            sql: "INSERT INTO tickets (number, status, order_id, reserved_until, updated_at) VALUES (?, 'available', NULL, NULL, ?)",
-            args: [numStr, now]
-          });
-        }
-        await db.batch(statements, "write");
+      const statements = [];
+      for (let j = 1; j <= 200; j++) {
+        const numStr = String(j).padStart(3, "0");
+        statements.push({
+          sql: "INSERT INTO tickets (number, status, order_id, reserved_until, updated_at) VALUES (?, 'available', NULL, NULL, ?)",
+          args: [numStr, now]
+        });
       }
-      console.log("✅ 10.000 números generados exitosamente.");
+      await db.batch(statements, "write");
+      console.log("✅ 200 números generados exitosamente.");
     }
     isInitialized = true;
   } catch (error) {
-    console.error("❌ Error inicializando la Base de Datos:", error);
+    console.error("Error al inicializar la base de datos:", error);
   }
 }
 

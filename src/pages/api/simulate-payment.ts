@@ -3,6 +3,24 @@ import { approveOrderAndTickets, rejectOrderAndReleaseTickets } from "@/lib/serv
 
 export const prerender = false
 
+export const GET: APIRoute = async ({ request, redirect }) => {
+  try {
+    const url = new URL(request.url)
+    const orderId = url.searchParams.get("orderId")
+
+    if (orderId) {
+      const paymentId = `SIM-APPROVED-${Date.now()}`
+      await approveOrderAndTickets(orderId, paymentId)
+      return redirect(`/confirmacion?orderId=${orderId}&status=approved`, 302)
+    }
+
+    return redirect("/participar", 302)
+  } catch (error) {
+    console.error("Error en GET /api/simulate-payment:", error)
+    return redirect("/participar", 302)
+  }
+}
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json()

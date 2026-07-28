@@ -3,14 +3,27 @@ import bcrypt from "bcryptjs"
 import fs from "node:fs"
 import path from "node:path"
 
-// Asegurar que la carpeta data/ exista para SQLite
+function getEnv(key: string): string | undefined {
+  try {
+    const metaVal = (import.meta as any).env?.[key]
+    if (metaVal) return String(metaVal)
+  } catch { /* ignorar */ }
+
+  if (typeof process !== "undefined" && process.env?.[key]) {
+    return process.env[key]
+  }
+  return undefined
+}
+
+// Asegurar que la carpeta data/ exista para SQLite local en desarrollo
 const dbDir = path.resolve(process.cwd(), "data")
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true })
 }
 
-const url = process.env.TURSO_DATABASE_URL || `file:${path.join(dbDir, "sorteo.db")}`
-const authToken = process.env.TURSO_AUTH_TOKEN
+const tursoUrl = getEnv("TURSO_DATABASE_URL")
+const authToken = getEnv("TURSO_AUTH_TOKEN")
+const url = tursoUrl || `file:${path.join(dbDir, "sorteo.db")}`
 
 export const db = createClient({
   url,
@@ -43,9 +56,7 @@ export async function initDB() {
         ticket_count INTEGER NOT NULL,
         total_amount REAL NOT NULL,
         status TEXT NOT NULL, -- 'pending', 'approved', 'rejected'
-        payment_method TEXT NOT NULL,
-        mp_preference_id TEXT,
-        mp_payment_id TEXT,
+        payment_method TEXT NOT NULL, -- 'mercadopago', 'transferencia'
         created_at INTEGER NOT NULL
       );
     `)
@@ -63,13 +74,7 @@ export async function initDB() {
       );
     `)
 
-    try {
-      await db.execute("ALTER TABLE tickets ADD COLUMN session_id TEXT;")
-    } catch {
-      // Ignorar si la columna ya existe
-    }
-
-    // 4. Seed de Administrador por defecto si no existe
+    // 4. Seed de Admin por defecto si no existe ninguno
     const adminCheck = await db.execute("SELECT COUNT(*) as count FROM admins")
     if (Number(adminCheck.rows[0].count) === 0) {
       const hash = await bcrypt.hash("admin123", 10)
@@ -80,29 +85,26 @@ export async function initDB() {
       console.log("✅ Admin por defecto creado: admin@valdivia.com / admin123")
     }
 
-    // 5. Seed de 10.000 Tickets si la tabla está vacía
+    // 5. Seed de 200 Tickets si la tabla está vacía
     const ticketCheck = await db.execute("SELECT COUNT(*) as count FROM tickets")
     if (Number(ticketCheck.rows[0].count) === 0) {
-      console.log("⏳ Inicializando 10.000 números de sorteo en la base de datos...")
-      const BATCH_SIZE = 500
+      console.log("⏳ Inicializando 200 números de sorteo en la base de datos...")
       const now = Date.now()
+      const statements = []
 
-      for (let i = 1; i <= 10000; i += BATCH_SIZE) {
-        const statements = []
-        for (let j = i; j < i + BATCH_SIZE && j <= 10000; j++) {
-          const numStr = String(j).padStart(5, "0")
-          statements.push({
-            sql: "INSERT INTO tickets (number, status, order_id, reserved_until, updated_at) VALUES (?, 'available', NULL, NULL, ?)",
-            args: [numStr, now],
-          })
-        }
-        await db.batch(statements, "write")
+      for (let j = 1; j <= 200; j++) {
+        const numStr = String(j).padStart(3, "0")
+        statements.push({
+          sql: "INSERT INTO tickets (number, status, order_id, reserved_until, updated_at) VALUES (?, 'available', NULL, NULL, ?)",
+          args: [numStr, now],
+        })
       }
-      console.log("✅ 10.000 números generados exitosamente.")
+      await db.batch(statements, "write")
+      console.log("✅ 200 números generados exitosamente.")
     }
 
     isInitialized = true
   } catch (error) {
-    console.error("❌ Error inicializando la Base de Datos:", error)
+    console.error("Error al inicializar la base de datos:", error)
   }
 }

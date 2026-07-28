@@ -1,8 +1,8 @@
 import type { APIRoute } from "astro"
 import { raffle } from "@/data/raffle"
 import { db, initDB } from "@/lib/db"
-import { createMercadoPagoPreference, canCreateMercadoPagoPreference } from "@/lib/services/mercadopago"
-import { rejectOrderAndReleaseTickets, reserveTicketsAtomic } from "@/lib/services/tickets"
+import { reserveTicketsAtomic } from "@/lib/services/tickets"
+import { createMPPreference } from "@/lib/services/mercadopago"
 
 export const prerender = false
 
@@ -11,7 +11,6 @@ export const POST: APIRoute = async ({ request }) => {
     await initDB()
     const body = await request.json()
     const { tickets, selectedNumbers, sessionId, buyer, paymentMethod } = body
-    const selectedPaymentMethod = paymentMethod || "mercadopago"
 
     const count = Number(tickets)
     if (!count || count < 1) {
@@ -21,14 +20,41 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
-    if (!buyer || !buyer.name || !buyer.email || !buyer.dni || !buyer.phone) {
+    const nameStr = String(buyer?.name ?? "").trim()
+    const dniStr = String(buyer?.dni ?? "").replace(/\D/g, "")
+    const emailStr = String(buyer?.email ?? "").trim()
+    const phoneStr = String(buyer?.phone ?? "").replace(/\D/g, "")
+
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,80}$/
+    if (!nameRegex.test(nameStr)) {
       return new Response(
-        JSON.stringify({ error: "Todos los datos del comprador son obligatorios." }),
+        JSON.stringify({ error: "El nombre solo debe contener letras y un máximo de 80 caracteres." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       )
     }
 
-    // Cálculo seguro del precio en el servidor
+    if (dniStr.length !== 8) {
+      return new Response(
+        JSON.stringify({ error: "El DNI debe estar conformado por exactamente 8 números." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      )
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/
+    if (!emailRegex.test(emailStr)) {
+      return new Response(
+        JSON.stringify({ error: "El formato de correo debe ser válido (debe contener @ y .com)." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      )
+    }
+
+    if (phoneStr.length < 9 || phoneStr.length > 11) {
+      return new Response(
+        JSON.stringify({ error: "El teléfono debe contener entre 9 y 11 números." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      )
+    }
+
     const expectedAmount = count * raffle.ticketBasePrice
     const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`
     const now = Date.now()
@@ -45,7 +71,7 @@ export const POST: APIRoute = async ({ request }) => {
         String(buyer.phone),
         count,
         expectedAmount,
-        selectedPaymentMethod,
+        paymentMethod || "mercadopago",
         now,
       ],
     })
@@ -63,64 +89,53 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
-    let mpPreferenceId: string | null = null
-    let paymentUrl: string | null = null
-    let demoMode = false
+    const url = new URL(request.url)
+    const baseUrl = `${url.protocol}//${url.host}`
 
-    if (selectedPaymentMethod === "mercadopago") {
-      if (canCreateMercadoPagoPreference()) {
-        try {
-          const preference = await createMercadoPagoPreference({
-            orderId,
-            buyer: {
-              name: String(buyer.name),
-              email: String(buyer.email),
-              dni: String(buyer.dni),
-              phone: String(buyer.phone),
-            },
-            tickets: reservation.numbers,
-            ticketCount: count,
-            totalAmount: expectedAmount,
-            reservedUntil: reservation.reservedUntil ?? now + 10 * 60 * 1000,
-            origin: new URL(request.url).origin,
-          })
+    // 3. Si el método de pago es Mercado Pago -> Crear Preferencia oficial
+    if (paymentMethod === "mercadopago" || !paymentMethod) {
+      const mpRes = await createMPPreference({
+        orderId,
+        ticketCount: count,
+        unitPrice: raffle.ticketBasePrice,
+        totalAmount: expectedAmount,
+        buyerName: String(buyer.name),
+        buyerEmail: String(buyer.email),
+        buyerDni: String(buyer.dni),
+        buyerPhone: String(buyer.phone),
+        baseUrl,
+      })
 
-          mpPreferenceId = preference.id
-          paymentUrl = preference.initPoint
-
-          await db.execute({
-            sql: "UPDATE orders SET mp_preference_id = ? WHERE id = ?",
-            args: [mpPreferenceId, orderId],
-          })
-        } catch (error) {
-          await rejectOrderAndReleaseTickets(orderId, "MP_PREFERENCE_ERROR", { notifyBuyer: false })
-          console.error("Error creando preferencia de Mercado Pago:", error)
-          return new Response(
-            JSON.stringify({
-              error:
-                "No se pudo iniciar el pago con Mercado Pago. Verifica MERCADOPAGO_ACCESS_TOKEN y PUBLIC_SITE_URL.",
-            }),
-            { status: 502, headers: { "Content-Type": "application/json" } }
-          )
-        }
-      } else {
-        demoMode = true
-      }
+      return new Response(
+        JSON.stringify({
+          success: true,
+          orderId,
+          tickets: reservation.numbers,
+          amount: expectedAmount,
+          initPoint: mpRes.initPoint,
+          isDemo: mpRes.isDemo,
+          reservedUntil: now + 15 * 60 * 1000,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
     }
 
+    // 4. Si es Transferencia Bancaria -> Retornar datos bancarios para depósito
     return new Response(
       JSON.stringify({
         success: true,
         orderId,
         tickets: reservation.numbers,
         amount: expectedAmount,
-        reservedUntil: reservation.reservedUntil ?? now + 10 * 60 * 1000,
-        paymentUrl,
-        mpPreferenceId,
-        demoMode,
-        message: paymentUrl
-          ? "Reserva realizada. Redirigiendo a Mercado Pago."
-          : "Reserva realizada exitosamente.",
+        paymentMethod: "transferencia",
+        bankInfo: {
+          bank: "Banco Galicia",
+          cbu: "0070123420000012345678",
+          alias: "VALDIVIA.SORTEO.MP",
+          cuit: "30-71234567-8",
+          holder: "Valdivia Automotores S.A.",
+        },
+        reservedUntil: now + 15 * 60 * 1000,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     )

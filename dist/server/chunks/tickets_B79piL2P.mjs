@@ -1,5 +1,5 @@
-import { i as initDB, d as db } from './index_CcSqpnRC.mjs';
-import { s as sendOrderConfirmationEmail } from './email_z8vBkfDl.mjs';
+import { i as initDB, d as db } from './index_D0UOeU_i.mjs';
+import { s as sendOrderConfirmationEmail, a as sendPaymentRejectedEmail } from './email_DRvbpv_u.mjs';
 
 const RESERVATION_MINUTES = 10;
 async function cleanupExpiredReservations() {
@@ -137,24 +137,27 @@ async function reserveTicketsAtomic(request, orderId, sessionId) {
     args: [orderId, reservedUntil, now, num]
   }));
   await db.batch(statements, "write");
-  return { success: true, numbers: targetNumbers };
+  return { success: true, numbers: targetNumbers, reservedUntil };
 }
 async function approveOrderAndTickets(orderId, mpPaymentId) {
   await initDB();
   const now = Date.now();
   const orderCheck = await db.execute({
-    sql: "SELECT buyer_name, buyer_email, total_amount FROM orders WHERE id = ?",
+    sql: "SELECT buyer_name, buyer_email, total_amount, status FROM orders WHERE id = ?",
     args: [orderId]
   });
   if (orderCheck.rows.length === 0) return false;
   const orderData = orderCheck.rows[0];
+  const orderStatus = String(orderData.status);
+  if (orderStatus === "approved") return true;
+  if (orderStatus !== "pending") return false;
   const orderRes = await db.execute({
-    sql: "UPDATE orders SET status = 'approved', mp_payment_id = ? WHERE id = ?",
+    sql: "UPDATE orders SET status = 'approved', mp_payment_id = ? WHERE id = ? AND status = 'pending'",
     args: [mpPaymentId ?? "SIMULATED_PAYMENT", orderId]
   });
   if (orderRes.rowsAffected === 0) return false;
   await db.execute({
-    sql: "UPDATE tickets SET status = 'paid', reserved_until = NULL, session_id = NULL, updated_at = ? WHERE order_id = ?",
+    sql: "UPDATE tickets SET status = 'paid', reserved_until = NULL, session_id = NULL, updated_at = ? WHERE order_id = ? AND status = 'reserved'",
     args: [now, orderId]
   });
   const ticketsRes = await db.execute({
@@ -171,5 +174,44 @@ async function approveOrderAndTickets(orderId, mpPaymentId) {
   }).catch((err) => console.error("Error asíncrono enviando email:", err));
   return true;
 }
+async function rejectOrderAndReleaseTickets(orderId, mpPaymentId, options = {}) {
+  await initDB();
+  const now = Date.now();
+  const orderCheck = await db.execute({
+    sql: "SELECT buyer_name, buyer_email, total_amount, status FROM orders WHERE id = ?",
+    args: [orderId]
+  });
+  if (orderCheck.rows.length === 0) return false;
+  const orderData = orderCheck.rows[0];
+  if (String(orderData.status) === "approved") {
+    return false;
+  }
+  const ticketsRes = await db.execute({
+    sql: "SELECT number FROM tickets WHERE order_id = ? AND status = 'reserved' ORDER BY number ASC",
+    args: [orderId]
+  });
+  const tickets = ticketsRes.rows.map((r) => String(r.number));
+  const orderRes = await db.execute({
+    sql: "UPDATE orders SET status = 'rejected', mp_payment_id = ? WHERE id = ? AND status != 'approved'",
+    args: [mpPaymentId ?? "PAYMENT_REJECTED", orderId]
+  });
+  if (orderRes.rowsAffected === 0) return false;
+  await db.execute({
+    sql: `UPDATE tickets
+          SET status = 'available', order_id = NULL, session_id = NULL, reserved_until = NULL, updated_at = ?
+          WHERE order_id = ? AND status = 'reserved'`,
+    args: [now, orderId]
+  });
+  if (tickets.length > 0 && options.notifyBuyer !== false) {
+    sendPaymentRejectedEmail({
+      orderId,
+      buyerName: String(orderData.buyer_name),
+      buyerEmail: String(orderData.buyer_email),
+      tickets,
+      totalAmount: Number(orderData.total_amount)
+    }).catch((err) => console.error("Error asincrono enviando email de rechazo:", err));
+  }
+  return true;
+}
 
-export { approveOrderAndTickets as a, getDBTickets as b, cleanupExpiredReservations as c, getLiveTicketStatuses as g, reserveTicketsAtomic as r, toggleSeatLock as t };
+export { approveOrderAndTickets as a, rejectOrderAndReleaseTickets as b, cleanupExpiredReservations as c, getDBTickets as d, getLiveTicketStatuses as g, reserveTicketsAtomic as r, toggleSeatLock as t };

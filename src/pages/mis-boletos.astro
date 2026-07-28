@@ -1,0 +1,166 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { Search, Ticket, CheckCircle2, Clock, AlertCircle } from "lucide-astro"
+---
+
+<Layout title="Mis Boletos de la Suerte | Valdivia Automotores">
+  <section class="bg-navy py-12 text-white">
+    <div class="container-app text-center">
+      <span class="text-xs font-semibold uppercase tracking-widest text-brand-light">Consulta Pública</span>
+      <h1 class="mt-2 font-display text-3xl font-800 sm:text-4xl">Consultá tus números de la suerte</h1>
+      <p class="mt-2 max-w-xl mx-auto text-white/75 text-sm">
+        Ingresá tu DNI o Correo electrónico registrado para verificar tus compras y consultar tus boletos asignados para el sorteo del Sedán 0km.
+      </p>
+    </div>
+  </section>
+
+  <div class="container-app py-12">
+    <!-- Formulario de Búsqueda -->
+    <div class="mx-auto max-w-xl card p-6 sm:p-8 shadow-xl">
+      <form id="lookup-form" class="space-y-4">
+        <label class="block">
+          <span class="text-xs font-700 text-navy/70 uppercase">Tu DNI o Correo Electrónico</span>
+          <div class="relative mt-1">
+            <Search class="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-navy/40" />
+            <input
+              required
+              type="text"
+              id="lookup-query"
+              placeholder="Ej: 30123456 o tu@email.com"
+              class="h-12 w-full rounded-xl border border-navy/15 pl-11 pr-4 text-base font-display text-navy focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+          </div>
+        </label>
+
+        <button type="submit" id="btn-lookup" class="btn-primary w-full py-3.5 font-display text-base">
+          Buscar Mis Boletos
+        </button>
+      </form>
+    </div>
+
+    <!-- Resultados de Búsqueda -->
+    <div id="results-section" class="mx-auto max-w-2xl mt-10 hidden space-y-6">
+      <div id="results-container">
+        <!-- Renderizado dinámico -->
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { formatARS } from "@/lib/cart"
+
+  function initLookup() {
+    const form = document.getElementById("lookup-form") as HTMLFormElement | null
+    const input = document.getElementById("lookup-query") as HTMLInputElement | null
+    const btn = document.getElementById("btn-lookup") as HTMLButtonElement | null
+    const resultsSec = document.getElementById("results-section")
+    const resultsContainer = document.getElementById("results-container")
+
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const query = input?.value.trim()
+      if (!query) return
+
+      if (btn) {
+        btn.disabled = true
+        btn.textContent = "Buscando..."
+      }
+
+      try {
+        const res = await fetch(`/api/tickets/lookup?query=${encodeURIComponent(query)}`)
+        const data = await res.json()
+
+        if (!data.success) {
+          alert(data.error || "No se pudo realizar la búsqueda.")
+          return
+        }
+
+        resultsSec?.classList.remove("hidden")
+
+        if (data.orders.length === 0) {
+          resultsContainer!.innerHTML = `
+            <div class="card p-8 text-center space-y-3">
+              <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              </div>
+              <h3 class="font-display text-lg font-700 text-navy">No se encontraron boletos</h3>
+              <p class="text-xs text-navy/60 max-w-md mx-auto">
+                No encontramos compras registradas con el DNI o Email <strong>"${query}"</strong>. Verificá los datos ingresados o realizá tu compra en la sección de participar.
+              </p>
+            </div>
+          `
+          return
+        }
+
+        resultsContainer!.innerHTML = data.orders
+          .map(
+            (o: any) => `
+          <div class="card p-6 space-y-4 mb-4 border-l-4 ${o.status === 'approved' ? 'border-l-emerald-500' : 'border-l-amber-500'}">
+            <div class="flex items-center justify-between border-b border-navy/10 pb-3">
+              <div>
+                <span class="text-xs font-700 text-brand uppercase">Orden #${o.id}</span>
+                <h3 class="font-display text-lg font-800 text-navy">${o.buyerName}</h3>
+              </div>
+              <span class="rounded-full px-3 py-1 text-xs font-800 ${
+                o.status === "approved"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-amber-100 text-amber-800"
+              }">
+                ${o.status === "approved" ? "✅ COMPRA CONFIRMADA" : "⏳ PAGO PENDIENTE"}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <span class="text-navy/50 block font-600">DNI</span>
+                <strong class="text-navy font-700">${o.buyerDni}</strong>
+              </div>
+              <div>
+                <span class="text-navy/50 block font-600">Total Abonado</span>
+                <strong class="text-brand font-800">${formatARS(o.totalAmount)}</strong>
+              </div>
+              <div>
+                <span class="text-navy/50 block font-600">Cantidad</span>
+                <strong class="text-navy font-700">${o.ticketCount} boletos</strong>
+              </div>
+            </div>
+
+            <div class="border-t border-navy/10 pt-3">
+              <span class="text-xs font-700 uppercase tracking-wider text-navy/60 block mb-2">
+                🎟️ Tus Números de la Suerte Asignados:
+              </span>
+              <div class="flex flex-wrap gap-2">
+                ${
+                  o.tickets.length > 0
+                    ? o.tickets
+                        .map(
+                          (t: string) => `
+                      <span class="rounded-xl bg-navy text-gold px-3 py-1.5 font-display text-sm font-800 shadow-sm border border-navy/20">
+                        #${t}
+                      </span>
+                    `
+                        )
+                        .join("")
+                    : `<span class="text-xs text-navy/40">Los números serán asignados al confirmarse el pago.</span>`
+                }
+              </div>
+            </div>
+          </div>
+        `
+          )
+          .join("")
+      } catch {
+        alert("Error de conexión al consultar boletos.")
+      } finally {
+        if (btn) {
+          btn.disabled = false
+          btn.textContent = "Buscar Mis Boletos"
+        }
+      }
+    })
+  }
+
+  initLookup()
+  document.addEventListener("astro:page-load", initLookup)
+</script>

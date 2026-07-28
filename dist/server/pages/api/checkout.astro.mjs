@@ -1,6 +1,7 @@
-import { r as raffle } from '../../chunks/raffle_DbkFDE3I.mjs';
-import { i as initDB, d as db } from '../../chunks/index_CcSqpnRC.mjs';
-import { r as reserveTicketsAtomic } from '../../chunks/tickets_DnGCFJIk.mjs';
+import { r as raffle } from '../../chunks/raffle_BobqFDMx.mjs';
+import { i as initDB, d as db } from '../../chunks/index_D0UOeU_i.mjs';
+import { r as reserveTicketsAtomic } from '../../chunks/tickets_B79piL2P.mjs';
+import { c as createMPPreference } from '../../chunks/mercadopago_D1ajzrxu.mjs';
 export { renderers } from '../../renderers.mjs';
 
 const prerender = false;
@@ -16,9 +17,33 @@ const POST = async ({ request }) => {
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
-    if (!buyer || !buyer.name || !buyer.email || !buyer.dni || !buyer.phone) {
+    const nameStr = String(buyer?.name ?? "").trim();
+    const dniStr = String(buyer?.dni ?? "").replace(/\D/g, "");
+    const emailStr = String(buyer?.email ?? "").trim();
+    const phoneStr = String(buyer?.phone ?? "").replace(/\D/g, "");
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,80}$/;
+    if (!nameRegex.test(nameStr)) {
       return new Response(
-        JSON.stringify({ error: "Todos los datos del comprador son obligatorios." }),
+        JSON.stringify({ error: "El nombre solo debe contener letras y un máximo de 80 caracteres." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    if (dniStr.length !== 8) {
+      return new Response(
+        JSON.stringify({ error: "El DNI debe estar conformado por exactamente 8 números." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(emailStr)) {
+      return new Response(
+        JSON.stringify({ error: "El formato de correo debe ser válido (debe contener @ y .com)." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    if (phoneStr.length < 9 || phoneStr.length > 11) {
+      return new Response(
+        JSON.stringify({ error: "El teléfono debe contener entre 9 y 11 números." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -49,14 +74,48 @@ const POST = async ({ request }) => {
         { status: 409, headers: { "Content-Type": "application/json" } }
       );
     }
+    const url = new URL(request.url);
+    const baseUrl = `${url.protocol}//${url.host}`;
+    if (paymentMethod === "mercadopago" || !paymentMethod) {
+      const mpRes = await createMPPreference({
+        orderId,
+        ticketCount: count,
+        unitPrice: raffle.ticketBasePrice,
+        totalAmount: expectedAmount,
+        buyerName: String(buyer.name),
+        buyerEmail: String(buyer.email),
+        buyerDni: String(buyer.dni),
+        buyerPhone: String(buyer.phone),
+        baseUrl
+      });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          orderId,
+          tickets: reservation.numbers,
+          amount: expectedAmount,
+          initPoint: mpRes.initPoint,
+          isDemo: mpRes.isDemo,
+          reservedUntil: now + 15 * 60 * 1e3
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({
         success: true,
         orderId,
         tickets: reservation.numbers,
         amount: expectedAmount,
-        reservedUntil: now + 15 * 60 * 1e3,
-        message: "Reserva realizada exitosamente por 15 minutos."
+        paymentMethod: "transferencia",
+        bankInfo: {
+          bank: "Banco Galicia",
+          cbu: "0070123420000012345678",
+          alias: "VALDIVIA.SORTEO.MP",
+          cuit: "30-71234567-8",
+          holder: "Valdivia Automotores S.A."
+        },
+        reservedUntil: now + 15 * 60 * 1e3
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );

@@ -3,7 +3,7 @@ import 'piccolore';
 /* empty css                         */
 import { $ as $$Image } from './_astro_assets_4TwwqjQN.mjs';
 import 'clsx';
-import { r as raffle } from './raffle_DbkFDE3I.mjs';
+import { r as raffle } from './raffle_BobqFDMx.mjs';
 
 const $$Astro$5 = createAstro();
 const $$ = createComponent(($$result, $$props, $$slots) => {
@@ -71,7 +71,7 @@ const logoValdivia = new Proxy({"src":"/_astro/logo-valdivia.DgiURDTx.png","widt
 					});
 
 const $$Header = createComponent(($$result, $$props, $$slots) => {
-  return renderTemplate`${maybeRenderHead()}<header class="sticky top-0 z-50 border-b border-navy/10 bg-white/90 backdrop-blur"> <div class="container-app flex h-16 items-center justify-between gap-4"> <a href="/" class="flex items-center gap-3"> ${renderComponent($$result, "Image", $$Image, { "src": logoValdivia, "alt": "Valdivia Automotores", "width": 40, "height": 40, "class": "h-10 w-10 rounded-lg object-contain" })} <span class="flex flex-col leading-tight"> <span class="font-display text-base font-800 tracking-tight text-navy">Valdivia</span> <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand">Automotores</span> </span> </a> <nav class="hidden items-center gap-8 md:flex" aria-label="Principal"> <a href="/#premio" class="text-sm font-semibold text-navy/70 transition hover:text-navy">El premio</a> <a href="/#como-participar" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Cómo participar</a> <a href="/#faq" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Preguntas Frecuentes</a> <a href="/#bases" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Bases</a> </nav> <a href="/participar" class="btn-primary px-4 py-2 text-sm"> ${renderComponent($$result, "Ticket", $$Ticket, { "class": "h-4 w-4" })}
+  return renderTemplate`${maybeRenderHead()}<header class="sticky top-0 z-50 border-b border-navy/10 bg-white/90 backdrop-blur"> <div class="container-app flex h-16 items-center justify-between gap-4"> <a href="/" class="flex items-center gap-3"> ${renderComponent($$result, "Image", $$Image, { "src": logoValdivia, "alt": "Valdivia Automotores", "width": 40, "height": 40, "class": "h-10 w-10 rounded-lg object-contain" })} <span class="flex flex-col leading-tight"> <span class="font-display text-base font-800 tracking-tight text-navy">Valdivia</span> <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand">Automotores</span> </span> </a> <nav class="hidden items-center gap-8 md:flex" aria-label="Principal"> <a href="/#premio" class="text-sm font-semibold text-navy/70 transition hover:text-navy">El premio</a> <a href="/#como-participar" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Cómo participar</a> <a href="/mis-boletos" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Mis boletos</a> <a href="/#faq" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Preguntas Frecuentes</a> <a href="/#bases" class="text-sm font-semibold text-navy/70 transition hover:text-navy">Bases</a> </nav> <a href="/participar" class="btn-primary px-4 py-2 text-sm"> ${renderComponent($$result, "Ticket", $$Ticket, { "class": "h-4 w-4" })}
 Participar
 </a> </div> </header>`;
 }, "C:/Users/Docente/Documents/valdivia-automotores-sorteo/src/components/Header.astro", void 0);

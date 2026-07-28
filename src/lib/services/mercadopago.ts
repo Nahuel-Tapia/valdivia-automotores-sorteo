@@ -1,25 +1,40 @@
+import { MercadoPagoConfig, Preference, Payment } from "mercadopago"
 import { raffle } from "@/data/raffle"
+import { approveOrderAndTickets } from "@/lib/services/tickets"
 
-interface BuyerData {
-  name: string
-  email: string
-  dni: string
-  phone: string
+/**
+ * En Astro/Vite, las variables de entorno del .env se acceden con import.meta.env.
+ */
+function getAccessToken(): string {
+  try {
+    const metaToken = (import.meta as any).env?.MERCADOPAGO_ACCESS_TOKEN
+    if (metaToken) return String(metaToken)
+  } catch { /* ignorar */ }
+
+  if (typeof process !== "undefined" && process.env?.MERCADOPAGO_ACCESS_TOKEN) {
+    return process.env.MERCADOPAGO_ACCESS_TOKEN
+  }
+
+  return ""
 }
 
-interface CreatePaymentPreferenceInput {
+function getMPClient(): { client: MercadoPagoConfig | null; token: string } {
+  const token = getAccessToken()
+  console.log(`🔑 Mercado Pago Token: ${token ? `${token.substring(0, 10)}... (${token.length} chars)` : "❌ NO ENCONTRADO"}`)
+  const client = token ? new MercadoPagoConfig({ accessToken: token }) : null
+  return { client, token }
+}
+
+export interface CreatePreferenceParams {
   orderId: string
-  buyer: BuyerData
-  tickets: string[]
   ticketCount: number
+  unitPrice: number
   totalAmount: number
-  reservedUntil: number
-  origin: string
-}
-
-interface MercadoPagoPreferenceResponse {
-  id: string
-  initPoint: string
+  buyerName: string
+  buyerEmail: string
+  buyerDni: string
+  buyerPhone: string
+  baseUrl: string
 }
 
 export interface MercadoPagoPaymentStatus {
@@ -28,143 +43,164 @@ export interface MercadoPagoPaymentStatus {
   status?: string
 }
 
-function getObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : {}
-}
+/**
+ * Crea una Preferencia de Mercado Pago Checkout Pro.
+ * 
+ * IMPORTANTE: Mercado Pago rechaza back_urls y notification_url con "localhost".
+ * Para desarrollo local, omitimos esos campos y dejamos que MP use sus URLs por defecto.
+ * Para producción (dominio real), se incluyen las back_urls completas.
+ */
+export async function createMPPreference(params: CreatePreferenceParams): Promise<{
+  initPoint: string
+  preferenceId?: string
+  isDemo: boolean
+}> {
+  const {
+    orderId,
+    ticketCount,
+    unitPrice,
+    buyerName,
+    buyerEmail,
+    buyerDni,
+    buyerPhone,
+    baseUrl,
+  } = params
 
-function getString(value: unknown): string | undefined {
-  return typeof value === "string" || typeof value === "number" ? String(value) : undefined
-}
+  const { client, token } = getMPClient()
 
-function getAccessToken(): string | null {
-  return process.env.MERCADOPAGO_ACCESS_TOKEN || null
-}
-
-function getSiteUrl(origin: string): string {
-  return (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || origin).replace(/\/$/, "")
-}
-
-function isLocalUrl(url: string): boolean {
-  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(url)
-}
-
-function getPreferenceUrl(response: Record<string, unknown>, accessToken: string): string | null {
-  const initPoint = typeof response.init_point === "string" ? response.init_point : null
-  const sandboxInitPoint = typeof response.sandbox_init_point === "string" ? response.sandbox_init_point : null
-
-  if (accessToken.startsWith("TEST-") || accessToken.startsWith("TEST_")) {
-    return sandboxInitPoint || initPoint
+  if (!client || !token) {
+    console.log("ℹ️ MERCADOPAGO_ACCESS_TOKEN no configurado. Utilizando flujo de simulación demo.")
+    return {
+      initPoint: `${baseUrl}/api/simulate-payment?orderId=${orderId}`,
+      isDemo: true,
+    }
   }
 
-  return initPoint || sandboxInitPoint
+  try {
+    console.log(`🛒 Creando preferencia para orden ${orderId}: ${ticketCount} boletos x $${unitPrice}`)
+    const preference = new Preference(client)
+
+    // Determinar si estamos en localhost (Mercado Pago rechaza localhost en back_urls)
+    const isLocalhost = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1")
+
+    // Cuerpo base de la preferencia
+    const preferenceBody: any = {
+      external_reference: orderId,
+      items: [
+        {
+          id: `boletos-${orderId}`,
+          title: `${ticketCount} Boleto${ticketCount > 1 ? "s" : ""} - ${raffle.title}`,
+          description: `Boletos para el sorteo del ${raffle.prizeName}`,
+          quantity: ticketCount,
+          unit_price: unitPrice,
+          currency_id: "ARS",
+        },
+      ],
+      payer: {
+        name: buyerName,
+        email: buyerEmail,
+        phone: {
+          number: buyerPhone,
+        },
+        identification: {
+          type: "DNI",
+          number: buyerDni,
+        },
+      },
+    }
+
+    // Solo incluir back_urls y auto_return si NO es localhost
+    if (!isLocalhost) {
+      preferenceBody.back_urls = {
+        success: `${baseUrl}/confirmacion?orderId=${orderId}`,
+        failure: `${baseUrl}/pago-rechazado?orderId=${orderId}`,
+        pending: `${baseUrl}/confirmacion?orderId=${orderId}`,
+      }
+      preferenceBody.auto_return = "approved"
+      preferenceBody.notification_url = `${baseUrl}/api/webhooks/mercadopago`
+    }
+
+    console.log("📤 Enviando preferencia a la API de Mercado Pago...")
+    const response = await preference.create({ body: preferenceBody })
+
+    console.log(`📥 Respuesta de Mercado Pago:`)
+    console.log(`   - id: ${response.id}`)
+    console.log(`   - init_point: ${response.init_point}`)
+    console.log(`   - sandbox_init_point: ${response.sandbox_init_point}`)
+
+    // Para tokens TEST- usar sandbox_init_point; para producción usar init_point
+    const isTestToken = token.startsWith("TEST-")
+    const initPoint = isTestToken
+      ? (response.sandbox_init_point || response.init_point)
+      : (response.init_point || response.sandbox_init_point)
+
+    if (!initPoint) {
+      console.error("❌ Mercado Pago no devolvió ninguna URL de pago.")
+      return {
+        initPoint: `${baseUrl}/api/simulate-payment?orderId=${orderId}`,
+        isDemo: true,
+      }
+    }
+
+    console.log(`✅ Preferencia creada (${isTestToken ? "Sandbox" : "Producción"}): ${initPoint}`)
+
+    return {
+      initPoint,
+      preferenceId: response.id,
+      isDemo: false,
+    }
+  } catch (error: any) {
+    console.error("❌ ERROR creando preferencia en Mercado Pago:")
+    console.error("   Mensaje:", error?.message || error)
+    if (error?.cause) console.error("   Causa:", JSON.stringify(error.cause, null, 2))
+    if (error?.status) console.error("   HTTP Status:", error.status)
+
+    return {
+      initPoint: `${baseUrl}/api/simulate-payment?orderId=${orderId}`,
+      isDemo: true,
+    }
+  }
 }
 
-export function canCreateMercadoPagoPreference(): boolean {
-  return Boolean(getAccessToken())
-}
-
+/**
+ * Consulta el estado real de un pago a la API de Mercado Pago mediante su Payment ID
+ */
 export async function getMercadoPagoPaymentStatus(paymentId: string): Promise<MercadoPagoPaymentStatus> {
-  const accessToken = getAccessToken()
-  if (!accessToken) {
-    throw new Error("MERCADOPAGO_ACCESS_TOKEN is not configured.")
+  const { client } = getMPClient()
+
+  if (!client) {
+    return { id: paymentId }
   }
 
-  const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
+  try {
+    const payment = new Payment(client)
+    const paymentData = await payment.get({ id: paymentId })
 
-  if (!response.ok) {
-    throw new Error(`Mercado Pago payment lookup failed: ${response.status}`)
-  }
-
-  const payment = getObject(await response.json())
-  return {
-    id: getString(payment.id) || paymentId,
-    orderId: getString(payment.external_reference),
-    status: getString(payment.status),
+    return {
+      id: String(paymentData.id),
+      orderId: paymentData.external_reference ? String(paymentData.external_reference) : undefined,
+      status: paymentData.status ? String(paymentData.status) : undefined,
+    }
+  } catch (error) {
+    console.error(`Error consultando pago #${paymentId} en Mercado Pago:`, error)
+    return { id: paymentId }
   }
 }
 
-export async function createMercadoPagoPreference(
-  input: CreatePaymentPreferenceInput
-): Promise<MercadoPagoPreferenceResponse> {
-  const accessToken = getAccessToken()
-  if (!accessToken) {
-    throw new Error("MERCADOPAGO_ACCESS_TOKEN is not configured.")
+/**
+ * Procesa el estado devuelto por Mercado Pago y aprueba la orden atómicamente si fue aprobado.
+ */
+export async function processMercadoPagoPaymentStatus(payment: MercadoPagoPaymentStatus): Promise<boolean> {
+  if (!payment.orderId) {
+    console.log("ℹ️ Webhook recibido sin external_reference (orderId).")
+    return false
   }
 
-  const siteUrl = getSiteUrl(input.origin)
-  if (isLocalUrl(siteUrl)) {
-    throw new Error("PUBLIC_SITE_URL or SITE_URL must be a public URL for Mercado Pago redirects.")
+  if (payment.status === "approved") {
+    console.log(`✅ Pago aprobado recibido para la Orden #${payment.orderId}`)
+    return await approveOrderAndTickets(payment.orderId, payment.id)
   }
 
-  const preferenceBody = {
-    items: [
-      {
-        id: input.orderId,
-        title: `${raffle.title} - ${input.ticketCount} boleto${input.ticketCount === 1 ? "" : "s"}`,
-        quantity: input.ticketCount,
-        currency_id: raffle.currency,
-        unit_price: raffle.ticketBasePrice,
-      },
-    ],
-    payer: {
-      name: input.buyer.name,
-      email: input.buyer.email,
-      phone: {
-        number: input.buyer.phone,
-      },
-      identification: {
-        type: "DNI",
-        number: input.buyer.dni,
-      },
-    },
-    back_urls: {
-      success: `${siteUrl}/confirmacion`,
-      failure: `${siteUrl}/pago-rechazado`,
-      pending: `${siteUrl}/pago-pendiente`,
-    },
-    auto_return: "approved",
-    notification_url: `${siteUrl}/api/webhooks/mercadopago`,
-    external_reference: input.orderId,
-    binary_mode: true,
-    expires: true,
-    expiration_date_from: new Date().toISOString(),
-    expiration_date_to: new Date(input.reservedUntil).toISOString(),
-    statement_descriptor: "VALDIVIA",
-    metadata: {
-      order_id: input.orderId,
-      ticket_numbers: input.tickets.join(","),
-    },
-  }
-
-  const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(preferenceBody),
-  })
-
-  const body = (await response.json().catch(() => ({}))) as Record<string, unknown>
-
-  if (!response.ok) {
-    console.error("[Mercado Pago] Error creando preferencia:", body)
-    throw new Error(`Mercado Pago preference creation failed: ${response.status}`)
-  }
-
-  const preferenceId = typeof body.id === "string" ? body.id : null
-  const initPoint = getPreferenceUrl(body, accessToken)
-
-  if (!preferenceId || !initPoint) {
-    throw new Error("Mercado Pago preference response is missing id or init_point.")
-  }
-
-  return {
-    id: preferenceId,
-    initPoint,
-  }
+  console.log(`ℹ️ Estado de pago para la Orden #${payment.orderId}: ${payment.status || "desconocido"}`)
+  return false
 }

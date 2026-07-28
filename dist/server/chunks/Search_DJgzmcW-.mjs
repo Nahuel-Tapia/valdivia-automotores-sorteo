@@ -1,6 +1,6 @@
 import { c as createComponent, r as renderComponent, m as maybeRenderHead, a as renderTemplate, b as createAstro } from './astro/server_DaRN7h1c.mjs';
 import 'piccolore';
-import { $ as $$ } from './Layout_BQx7d89A.mjs';
+import { $ as $$ } from './Layout_LZPCddmC.mjs';
 
 const $$Astro = createAstro();
 const $$Search = createComponent(($$result, $$props, $$slots) => {

@@ -4,8 +4,8 @@ import { raffle } from "@/data/raffle"
 import { CheckCircle2, Mail, Home, Ticket } from "lucide-astro"
 import { Image } from "astro:assets"
 import logoValdivia from "@/assets/logo-valdivia.png"
-import { getMercadoPagoPaymentStatus } from "@/lib/services/mercadopago"
-import { processMercadoPagoPaymentStatus } from "@/lib/services/payment-processing"
+import { getMercadoPagoPaymentStatus, processMercadoPagoPaymentStatus } from "@/lib/services/mercadopago"
+import { approveOrderAndTickets } from "@/lib/services/tickets"
 
 export const prerender = false
 
@@ -15,13 +15,23 @@ const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
   year: "numeric",
 })
 
-const paymentId = Astro.url.searchParams.get("payment_id")
+// Auto-aprobación y actualización atómica en DB al retornar desde Mercado Pago
+const paymentId = Astro.url.searchParams.get("payment_id") || Astro.url.searchParams.get("collection_id")
+const status = Astro.url.searchParams.get("status") || Astro.url.searchParams.get("collection_status")
+const orderId = Astro.url.searchParams.get("external_reference") || Astro.url.searchParams.get("orderId")
+
 if (paymentId && process.env.MERCADOPAGO_ACCESS_TOKEN) {
   try {
     const payment = await getMercadoPagoPaymentStatus(paymentId)
     await processMercadoPagoPaymentStatus(payment)
   } catch (error) {
-    console.error("Error sincronizando retorno aprobado de Mercado Pago:", error)
+    console.error("Error consultando API de Mercado Pago:", error)
+  }
+} else if (orderId && status === "approved") {
+  try {
+    await approveOrderAndTickets(orderId, paymentId || undefined)
+  } catch (error) {
+    console.error("Error aprobando orden al retornar de MP:", error)
   }
 }
 ---
@@ -135,7 +145,7 @@ if (paymentId && process.env.MERCADOPAGO_ACCESS_TOKEN) {
       numbersEl.innerHTML = nums
         .map(
           (n) =>
-            `<span class="rounded-lg border border-navy/10 bg-cloud px-3 py-1.5 font-display text-sm font-800 tracking-wider text-navy">${n}</span>`,
+            `<span class="rounded-lg border border-navy/10 bg-cloud px-3 py-1.5 font-display text-sm font-800 tracking-wider text-navy">#${n}</span>`,
         )
         .join("")
     }

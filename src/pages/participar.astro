@@ -4,8 +4,8 @@ import { raffle, formatCurrency } from "@/data/raffle"
 import { getDBTickets } from "@/lib/services/tickets"
 import { ArrowRight, Search, Shuffle, Clock } from "lucide-astro"
 
-// Cargar primeros 60 tickets desde la DB para renderizado inicial
-const initialTickets = await getDBTickets("", "all", 60)
+// Cargar los 200 tickets desde la DB para renderizado completo de la grilla
+const initialTickets = await getDBTickets("", "all", 200)
 ---
 
 <Layout title="Reserva de Números Estilo Cine | Valdivia Automotores">
