@@ -1,11 +1,30 @@
 import { Resend } from "resend"
 import { raffle } from "@/data/raffle"
 
-const resendKey = process.env.RESEND_API_KEY
-const resend = resendKey ? new Resend(resendKey) : null
+function getResendConfig(): { resend: Resend | null; from: string } {
+  let key = ""
+  try {
+    const metaKey = (import.meta as any).env?.RESEND_API_KEY
+    if (metaKey) key = String(metaKey)
+  } catch { /* ignorar */ }
 
-const defaultFrom = "Valdivia Automotores <sorteos@valdiviaautomotores.com>"
-const fromEmail = process.env.MAIL_FROM || process.env.RESEND_FROM_EMAIL || defaultFrom
+  if (!key && typeof process !== "undefined" && process.env?.RESEND_API_KEY) {
+    key = process.env.RESEND_API_KEY
+  }
+
+  let from = "onboarding@resend.dev"
+  try {
+    const metaFrom = (import.meta as any).env?.RESEND_FROM_EMAIL || (import.meta as any).env?.MAIL_FROM
+    if (metaFrom) from = String(metaFrom)
+  } catch { /* ignorar */ }
+
+  if (typeof process !== "undefined" && (process.env?.RESEND_FROM_EMAIL || process.env?.MAIL_FROM)) {
+    from = process.env.RESEND_FROM_EMAIL || process.env.MAIL_FROM || from
+  }
+
+  const resend = key ? new Resend(key) : null
+  return { resend, from }
+}
 
 export interface EmailOrderDetails {
   orderId: string
@@ -47,6 +66,8 @@ function formatAmount(value: number): string {
 }
 
 async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean> {
+  const { resend, from } = getResendConfig()
+
   if (!resend) {
     console.log(`[MAIL DEMO] ${subject} -> ${to}`)
     return true
@@ -54,12 +75,12 @@ async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean
 
   try {
     await resend.emails.send({
-      from: fromEmail,
+      from,
       to,
       subject,
       html,
     })
-    console.log(`[MAIL] Enviado a ${to}: ${subject}`)
+    console.log(`[MAIL] Enviado automáticamente a ${to}: ${subject}`)
     return true
   } catch (error) {
     console.error("[MAIL] Error enviando correo:", error)
@@ -87,7 +108,7 @@ function buildOrderSummary(details: EmailOrderDetails): string {
           <td style="padding:6px 0;text-align:right;font-weight:700;color:#1f2a52;">${details.tickets.length}</td>
         </tr>
         <tr>
-          <td style="padding:6px 0;color:#64748b;">Total:</td>
+          <td style="padding:6px 0;color:#64748b;">Total abonado:</td>
           <td style="padding:6px 0;text-align:right;font-weight:800;color:#2563eb;">${formatAmount(details.totalAmount)}</td>
         </tr>
         <tr>
@@ -97,7 +118,7 @@ function buildOrderSummary(details: EmailOrderDetails): string {
       </table>
     </div>
     <div style="text-align:center;margin:32px 0;">
-      <h3 style="color:#1f2a52;font-size:16px;margin-bottom:12px;">Numeros asignados</h3>
+      <h3 style="color:#1f2a52;font-size:16px;margin-bottom:12px;">Números asignados de la suerte</h3>
       <div>${ticketsBadges}</div>
     </div>
   `
@@ -129,16 +150,16 @@ function buildBaseEmail(title: string, body: string): string {
 
 function buildTicketEmailHTML(details: EmailOrderDetails): string {
   return buildBaseEmail(
-    "Comprobante oficial de participacion",
+    "Comprobante oficial de participación",
     `
-      <h2 style="color:#1f2a52;font-size:20px;margin-top:0;">Hola, ${escapeHtml(details.buyerName)}</h2>
+      <h2 style="color:#1f2a52;font-size:20px;margin-top:0;">¡Hola, ${escapeHtml(details.buyerName)}!</h2>
       <p style="font-size:15px;line-height:1.5;color:#475569;">
-        Tu pago fue procesado exitosamente. Ya estas participando oficialmente del
+        Tu pago fue procesado exitosamente. Ya estás participando oficialmente del
         <strong>${escapeHtml(raffle.title)}</strong> por el <strong>${escapeHtml(raffle.prizeName)} ${raffle.prizeYear}</strong>.
       </p>
       ${buildOrderSummary(details)}
       <p style="font-size:13px;color:#94a3b8;text-align:center;margin-top:32px;border-top:1px solid #f1f5f9;padding-top:16px;">
-        Guarda este correo como comprobante oficial de participacion.
+        Guardá este correo electrónico como comprobante oficial de participación.
       </p>
     `
   )
@@ -155,7 +176,7 @@ function buildPaymentRejectedEmailHTML(details: EmailOrderDetails): string {
       </p>
       ${buildOrderSummary(details)}
       <p style="font-size:13px;color:#94a3b8;text-align:center;margin-top:32px;border-top:1px solid #f1f5f9;padding-top:16px;">
-        Si queres participar, podes volver a elegir boletos e intentar el pago nuevamente.
+        Si querés participar, podés volver a elegir boletos e intentar el pago nuevamente.
       </p>
     `
   )
@@ -164,7 +185,7 @@ function buildPaymentRejectedEmailHTML(details: EmailOrderDetails): string {
 export async function sendOrderConfirmationEmail(details: EmailOrderDetails): Promise<boolean> {
   return sendEmail({
     to: details.buyerEmail,
-    subject: `Tus numeros para ${raffle.title} - Orden #${details.orderId}`,
+    subject: `Tus números para ${raffle.title} - Orden #${details.orderId}`,
     html: buildTicketEmailHTML(details),
   })
 }
