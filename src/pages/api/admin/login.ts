@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro"
 import { db, initDB } from "@/lib/db"
 import bcrypt from "bcryptjs"
+import { generateAdminSessionToken } from "@/lib/services/auth"
 
 export const prerender = false
 
@@ -38,8 +39,8 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
-    // Token simple de sesión de demostración
-    const token = `adm_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Token seguro de sesión firmado con HMAC
+    const token = generateAdminSessionToken(String(admin.id), String(admin.email))
 
     return new Response(
       JSON.stringify({
@@ -47,7 +48,13 @@ export const POST: APIRoute = async ({ request }) => {
         token,
         admin: { id: admin.id, email: admin.email },
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Set-Cookie": `admin_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`,
+        },
+      }
     )
   } catch (error) {
     console.error("Error en admin login:", error)

@@ -68,6 +68,13 @@ export async function initDB() {
       );
     `)
 
+    // Migración de columna mp_payment_id si no existe
+    try {
+      await db.execute("ALTER TABLE orders ADD COLUMN mp_payment_id TEXT;")
+    } catch {
+      // Ignorar si la columna ya existe
+    }
+
     // 3. Crear tabla de tickets
     await db.execute(`
       CREATE TABLE IF NOT EXISTS tickets (

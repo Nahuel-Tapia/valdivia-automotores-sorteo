@@ -11,10 +11,10 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         <h1 class="mt-1 font-display text-2xl font-800 sm:text-3xl">Administración de Sorteo</h1>
       </div>
       <div class="flex items-center gap-3">
-        <a id="btn-export-csv" href="/api/admin/export" class="hidden btn-primary text-xs py-2 px-3 bg-brand text-white">
+        <button id="btn-export-csv" class="hidden btn-primary text-xs py-2 px-3 bg-brand text-white">
           <Download class="h-4 w-4" />
           Exportar CSV
-        </a>
+        </button>
         <button id="btn-logout" class="hidden btn-secondary text-xs py-2 px-3 bg-white/10 border-white/20 text-white hover:bg-white/20">
           <LogOut class="h-4 w-4" />
           Cerrar Sesión
@@ -281,6 +281,32 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       location.reload()
     })
 
+    exportBtn?.addEventListener("click", async () => {
+      const currentToken = localStorage.getItem("valdivia_admin_token")
+      try {
+        const res = await fetch("/api/admin/export", {
+          headers: { Authorization: `Bearer ${currentToken}` },
+        })
+        if (res.status === 401) {
+          alert("Sesión expirada. Por favor volvaz a ingresar.")
+          localStorage.removeItem("valdivia_admin_token")
+          location.reload()
+          return
+        }
+        const blob = await res.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `lista_oficial_participantes_${Date.now()}.csv`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+      } catch {
+        alert("Error de conexión al exportar CSV.")
+      }
+    })
+
     searchInput?.addEventListener("input", (e) => {
       const q = (e.target as HTMLInputElement).value.trim().toLowerCase()
       renderOrdersTable(allOrders.filter(o => 
@@ -297,13 +323,17 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
 
     resendEmailBtn?.addEventListener("click", async () => {
       if (!currentSelectedOrderId) return
+      const currentToken = localStorage.getItem("valdivia_admin_token")
       resendEmailBtn.setAttribute("disabled", "true")
       resendEmailBtn.textContent = "Enviando correo..."
 
       try {
         const res = await fetch("/api/admin/resend-email", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentToken}`,
+          },
           body: JSON.stringify({ orderId: currentSelectedOrderId }),
         })
         const data = await res.json()
@@ -321,13 +351,27 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     })
 
     async function showDashboard() {
+      const currentToken = localStorage.getItem("valdivia_admin_token")
+      if (!currentToken) {
+        loginSec?.classList.remove("hidden")
+        dashSec?.classList.add("hidden")
+        return
+      }
+
       loginSec?.classList.add("hidden")
       dashSec?.classList.remove("hidden")
       logoutBtn?.classList.remove("hidden")
       exportBtn?.classList.remove("hidden")
 
       try {
-        const res = await fetch("/api/admin/metrics")
+        const res = await fetch("/api/admin/metrics", {
+          headers: { Authorization: `Bearer ${currentToken}` },
+        })
+        if (res.status === 401) {
+          localStorage.removeItem("valdivia_admin_token")
+          location.reload()
+          return
+        }
         const data = await res.json()
         if (data.success) {
           const m = data.metrics
@@ -408,6 +452,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     }
 
     async function openOrderDetailModal(orderId: string) {
+      const currentToken = localStorage.getItem("valdivia_admin_token")
       currentSelectedOrderId = orderId
       orderModal?.classList.remove("hidden")
       orderModal?.classList.add("flex")
@@ -416,7 +461,9 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       document.getElementById("modal-tickets-grid")!.innerHTML = `<span class="text-xs text-navy/40">Cargando boletos...</span>`
 
       try {
-        const res = await fetch(`/api/admin/order-details?orderId=${orderId}`)
+        const res = await fetch(`/api/admin/order-details?orderId=${orderId}`, {
+          headers: { Authorization: `Bearer ${currentToken}` },
+        })
         const data = await res.json()
 
         if (!data.success) {
@@ -481,12 +528,16 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     }
 
     async function approveOrder(orderId: string) {
+      const currentToken = localStorage.getItem("valdivia_admin_token")
       if (!confirm(`¿Confirmás la aprobación manual del pago de la orden #${orderId}?`)) return
 
       try {
         const res = await fetch("/api/admin/approve-order", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentToken}`,
+          },
           body: JSON.stringify({ orderId }),
         })
         const data = await res.json()

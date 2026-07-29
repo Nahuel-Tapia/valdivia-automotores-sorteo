@@ -1,0 +1,525 @@
+---
+import { raffle } from '../data/raffle';
+import { carHotspots } from '../data/car-hotspots';
+import { ArrowLeft, ChevronRight, RotateCcw } from 'lucide-astro';
+
+const colors = raffle?.carColors || [];
+const hotspots = carHotspots || [];
+---
+
+<section id="showroom" class="relative w-full py-14 lg:py-20 overflow-hidden bg-cloud">
+  <div class="container-app relative z-10">
+    
+    <!-- Section Header -->
+    <div class="text-center max-w-3xl mx-auto mb-8 lg:mb-10 animate-on-scroll">
+      <div class="inline-flex items-center justify-center rounded-full border border-navy/20 bg-white px-4 py-1.5 mb-4 shadow-sm">
+        <span class="text-xs font-bold text-navy uppercase tracking-widest">🔄 Visor Interactivo 360°</span>
+      </div>
+      <h2 class="text-4xl md:text-5xl font-display font-extrabold text-navy mb-3 tracking-tight">
+        Girá tu <span class="text-brand">BYD Dolphin Mini</span>
+      </h2>
+      <p class="text-base sm:text-lg text-navy/70 font-sans max-w-xl mx-auto leading-relaxed">
+        Arrastrá horizontalmente para hacer girar el vehículo en 360°.
+      </p>
+    </div>
+
+    <!-- MAIN 360 VIEWER CARD -->
+    <div class="w-full mb-10 animate-on-scroll">
+      <div 
+        id="showroom-360-card"
+        class="relative w-full h-[480px] sm:h-[600px] lg:h-[680px] rounded-3xl overflow-hidden border border-navy/15 shadow-card select-none cursor-grab active:cursor-grabbing transition-all duration-300"
+        style="background: linear-gradient(180deg, #EAECEF 0%, #E0E3E7 35%, #D6D9DD 60%, #CBCED3 100%);"
+      >
+        <!-- Subtle ambient glow behind car -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[800px] h-[300px] sm:h-[400px] rounded-full pointer-events-none" style="background: radial-gradient(ellipse, rgba(200,214,38,0.08) 0%, transparent 70%);"></div>
+
+        <!-- Top Drag Instruction Badge -->
+        <div class="absolute top-4 left-4 sm:top-6 sm:left-6 z-30 pointer-events-none">
+          <span class="inline-flex items-center gap-2 bg-navy text-white text-xs sm:text-sm px-4 py-2 rounded-full font-bold shadow-md">
+            <span class="text-brand-light text-base animate-pulse">↔️</span>
+            <span>Arrastrá para girar 360°</span>
+          </span>
+        </div>
+
+        <!-- Reset View Button -->
+        <div class="absolute top-4 right-4 sm:top-6 sm:right-6 z-30">
+          <button 
+            id="reset-view-btn"
+            class="inline-flex items-center gap-1.5 bg-white/90 border border-navy/15 hover:border-brand text-navy text-xs sm:text-sm px-4 py-2 rounded-full font-semibold transition-all shadow-sm hover:shadow-md outline-none backdrop-blur-sm"
+            title="Reiniciar vista"
+          >
+            <RotateCcw class="w-4 h-4 text-brand" />
+            <span>Centrar</span>
+          </button>
+        </div>
+
+        <!-- Canvas 360 Renderer -->
+        <div class="w-full h-full flex items-center justify-center relative">
+          <canvas id="canvas-360" class="w-full h-full"></canvas>
+
+          <!-- Edge vignette to smoothly fade out any remaining border artifacts -->
+          <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 80px 30px #E0E3E7, inset 0 -40px 60px 10px #CBCED3;"></div>
+
+          <!-- Loading Overlay -->
+          <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-40 transition-opacity duration-300" style="background: linear-gradient(180deg, #EAECEF 0%, #E0E3E7 35%, #D6D9DD 60%, #CBCED3 100%);">
+            <div class="w-10 h-10 border-3 border-brand/20 border-t-brand rounded-full animate-spin"></div>
+            <span class="text-xs font-semibold text-navy/70 uppercase tracking-widest">Cargando experiencia 360°...</span>
+          </div>
+
+          <!-- Fallback Static Images for Black / Blue colors -->
+          {colors.map((color) => (
+            <img 
+              src={color.image}
+              alt={color.name}
+              id={`fallback-img-${color.id}`}
+              class="fallback-img absolute inset-0 w-full h-full object-contain p-8 hidden select-none filter drop-shadow-[0_20px_25px_rgba(31,42,82,0.2)]"
+            />
+          ))}
+        </div>
+
+        <!-- High-Contrast Color Selector Bar (Bottom Center) -->
+        <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-navy text-white border border-navy-light px-6 py-3 rounded-full flex items-center gap-4 z-30 shadow-card backdrop-blur-md">
+          <span class="text-xs font-bold uppercase tracking-wider text-white/80 mr-1 hidden sm:inline-block">Color:</span>
+          {colors.map((color, idx) => (
+            <button
+              class={`color-btn w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 transition-all duration-300 relative group outline-none ${idx === 0 ? 'border-white scale-110 shadow-md ring-2 ring-brand' : 'border-transparent opacity-85 hover:opacity-100 hover:scale-110'}`}
+              style={`background-color: ${color.hex};`}
+              data-color-id={color.id}
+              aria-label={`Seleccionar color ${color.name}`}
+            >
+              <div class="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-navy-dark text-white text-xs px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none font-medium border border-white/10 shadow-lg">
+                {color.name}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- PUNTOS DE INTERÉS - PLACED BELOW THE 360 VIEWER -->
+    <div class="w-full animate-on-scroll">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="text-2xl font-display font-extrabold text-navy">Características del Vehículo</h3>
+          <p class="text-sm text-navy/60">Seleccioná una parte para ver la ficha técnica en detalle.</p>
+        </div>
+      </div>
+
+      <!-- Hotspot Cards Grid -->
+      <div id="hotspot-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {hotspots.map((hotspot) => (
+          <button 
+            class="hotspot-card bg-white hover:bg-cloud border border-navy/15 hover:border-brand transition-all duration-300 p-5 rounded-2xl text-left group flex flex-col justify-between items-start gap-4 outline-none shadow-card hover:-translate-y-1"
+            data-hotspot-id={hotspot.id}
+          >
+            <div class="w-12 h-12 rounded-2xl bg-brand/10 flex items-center justify-center border border-brand/20 group-hover:bg-brand transition-colors">
+              <span class="text-2xl">{hotspot.icon}</span>
+            </div>
+            <div>
+              <span class="font-bold text-base text-navy group-hover:text-brand transition-colors block mb-1">{hotspot.label}</span>
+              <span class="text-xs text-navy/50 font-medium group-hover:text-navy/70">Ver especificaciones →</span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <!-- Active Hotspot Detail Panel -->
+      <div id="hotspot-detail" class="hidden mt-6 transition-all duration-300">
+        <div class="bg-navy border border-navy-light p-6 sm:p-8 rounded-3xl shadow-card flex flex-col text-white">
+          <div class="flex items-center justify-between mb-6">
+            <div class="detail-header flex items-center gap-4">
+              <div class="detail-icon w-12 h-12 rounded-2xl bg-brand/20 flex items-center justify-center border border-brand/40 text-2xl">
+                <span>⚡</span>
+              </div>
+              <div>
+                <h3 class="text-2xl font-display font-bold text-white leading-tight">Detail Title</h3>
+                <span class="text-xs text-brand-light font-semibold uppercase tracking-wider">Ficha Técnica</span>
+              </div>
+            </div>
+            
+            <button id="back-btn" class="inline-flex items-center text-xs font-bold text-white/80 hover:text-white transition-colors bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl border border-white/20">
+              <ArrowLeft class="w-3.5 h-3.5 mr-1.5" />
+              Cerrar detalle
+            </button>
+          </div>
+          
+          <p class="description text-white/80 text-base leading-relaxed mb-6 max-w-3xl">
+            Detail description goes here.
+          </p>
+          
+          <dl class="specs-grid grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <!-- Specs injected dynamically via JS -->
+          </dl>
+        </div>
+      </div>
+
+      <!-- Big CTA Button Below -->
+      <div class="mt-10 text-center">
+        <a href="/participar" class="btn-primary px-8 py-4 text-lg font-extrabold shadow-card inline-flex items-center gap-3 hover:scale-105 transition-transform">
+          ⚡ Participar del Sorteo Ahora
+          <ChevronRight class="w-5 h-5" />
+        </a>
+      </div>
+
+    </div>
+  </div>
+  
+  <!-- JSON Data Island -->
+  <script type="application/json" id="hotspots-data" set:html={JSON.stringify(hotspots)}></script>
+  <script type="application/json" id="colors-data" set:html={JSON.stringify(colors)}></script>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('canvas-360') as HTMLCanvasElement | null;
+    const ctx = canvas ? canvas.getContext('2d', { willReadFrequently: true }) : null;
+    const container = document.getElementById('showroom-360-card');
+    const spinner = document.getElementById('loading-spinner');
+    const resetBtn = document.getElementById('reset-view-btn');
+
+    const colorBtns = document.querySelectorAll('.color-btn');
+    const hotspotCards = document.querySelectorAll('.hotspot-card');
+    
+    const detailContainer = document.getElementById('hotspot-detail');
+    const backBtn = document.getElementById('back-btn');
+    
+    const detailHeader = document.querySelector('.detail-header h3');
+    const detailDesc = document.querySelector('.description');
+    const specsGrid = document.querySelector('.specs-grid');
+    
+    const colorsDataEl = document.getElementById('colors-data');
+    const colorsData: any[] = colorsDataEl ? JSON.parse(colorsDataEl.textContent || '[]') : [];
+
+    const hotspotsDataEl = document.getElementById('hotspots-data');
+    const hotspotsData: any[] = hotspotsDataEl ? JSON.parse(hotspotsDataEl.textContent || '[]') : [];
+
+    // ─── CONFIGURATION ───
+    const TOTAL_FRAMES = 60; // More frames = smoother rotation
+    const LERP_FACTOR = 0.2;
+    const DRAG_SENSITIVITY = 5; // pixels per frame step
+
+    // ─── Background color to paint over checkerboard ───
+    // The checkerboard is alternating ~(204,204,204) and ~(255,255,255).
+    // We replace it with a smooth gradient that matches our CSS container bg.
+    // Container gradient goes: #EAECEF → #E0E3E7 → #D6D9DD → #CBCED3
+    // We'll paint bg pixels with a vertical gradient matching this.
+    const BG_TOP = { r: 234, g: 236, b: 239 };    // #EAECEF
+    const BG_BOTTOM = { r: 203, g: 206, b: 211 };  // #CBCED3
+
+    const framesMap: Record<string, ImageBitmap[]> = {};
+    
+    let activeColorId = 'white';
+    let targetFrameIndex = 0;
+    let currentFrameIndex = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startFrameIndex = 0;
+
+    function resizeCanvas() {
+      if (!canvas || !container) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = container.clientHeight * dpr;
+      renderFrame();
+    }
+
+    function renderFrame() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const activeFrames = framesMap[activeColorId];
+      if (activeFrames && activeFrames.length > 0) {
+        let frameIdx = Math.floor(currentFrameIndex) % activeFrames.length;
+        if (frameIdx < 0) frameIdx += activeFrames.length;
+        const frame = activeFrames[frameIdx];
+        if (frame) {
+          const scale = Math.min(canvas.width / frame.width, canvas.height / frame.height) * 0.95;
+          const drawW = frame.width * scale;
+          const drawH = frame.height * scale;
+          const x = (canvas.width - drawW) / 2;
+          const y = (canvas.height - drawH) / 2;
+          ctx.drawImage(frame, x, y, drawW, drawH);
+        }
+      }
+    }
+
+    // ─── Smooth 60fps animation loop ───
+    function animate() {
+      const diff = targetFrameIndex - currentFrameIndex;
+      if (Math.abs(diff) > 0.01) {
+        currentFrameIndex += diff * LERP_FACTOR;
+        renderFrame();
+      }
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+
+    // ─── BACKGROUND REPLACEMENT (not removal!) ───
+    // Instead of trying to make pixels transparent (which fails for white cars),
+    // we REPLACE every background pixel with a matching gradient color.
+    // The result: the checkerboard disappears, the car stays perfect.
+    function replaceBackgroundWithGradient(offCtx: CanvasRenderingContext2D, width: number, height: number) {
+      const imgData = offCtx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      const totalPixels = width * height;
+
+      // Phase 1: BFS flood fill from edges to find exterior background region
+      const isExterior = new Uint8Array(totalPixels);
+      const queue = new Int32Array(totalPixels);
+      let qHead = 0;
+      let qTail = 0;
+
+      // A pixel is "background-like" if it's achromatic (low saturation) and bright
+      function isBgLike(pixelIdx: number): boolean {
+        const i = pixelIdx * 4;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        const chroma = maxC - minC;
+        // Background: low chroma (achromatic gray/white) and brightness > threshold
+        // Car paint: even white pearl has subtle warm tint (chroma > 0)
+        // We use a generous threshold here because BFS from edges constrains it
+        return chroma <= 12 && maxC >= 120;
+      }
+
+      // Seed from all 4 borders
+      for (let x = 0; x < width; x++) {
+        // Top row
+        const topIdx = x;
+        if (isBgLike(topIdx)) {
+          isExterior[topIdx] = 1;
+          queue[qTail++] = topIdx;
+        }
+        // Bottom row
+        const btmIdx = (height - 1) * width + x;
+        if (isBgLike(btmIdx)) {
+          isExterior[btmIdx] = 1;
+          queue[qTail++] = btmIdx;
+        }
+      }
+      for (let y = 1; y < height - 1; y++) {
+        // Left column
+        const leftIdx = y * width;
+        if (!isExterior[leftIdx] && isBgLike(leftIdx)) {
+          isExterior[leftIdx] = 1;
+          queue[qTail++] = leftIdx;
+        }
+        // Right column
+        const rightIdx = y * width + (width - 1);
+        if (!isExterior[rightIdx] && isBgLike(rightIdx)) {
+          isExterior[rightIdx] = 1;
+          queue[qTail++] = rightIdx;
+        }
+      }
+
+      // BFS flood fill — only spreads through background-like pixels
+      while (qHead < qTail) {
+        const curr = queue[qHead++];
+        const cx = curr % width;
+        const cy = (curr - cx) / width;
+
+        // 4-connected neighbors
+        if (cx > 0 && !isExterior[curr - 1] && isBgLike(curr - 1)) {
+          isExterior[curr - 1] = 1;
+          queue[qTail++] = curr - 1;
+        }
+        if (cx < width - 1 && !isExterior[curr + 1] && isBgLike(curr + 1)) {
+          isExterior[curr + 1] = 1;
+          queue[qTail++] = curr + 1;
+        }
+        if (cy > 0 && !isExterior[curr - width] && isBgLike(curr - width)) {
+          isExterior[curr - width] = 1;
+          queue[qTail++] = curr - width;
+        }
+        if (cy < height - 1 && !isExterior[curr + width] && isBgLike(curr + width)) {
+          isExterior[curr + width] = 1;
+          queue[qTail++] = curr + width;
+        }
+      }
+
+      // Phase 2: Replace background pixels with gradient color (NOT transparent!)
+      for (let i = 0; i < totalPixels; i++) {
+        if (isExterior[i]) {
+          const y = (i / width) | 0;
+          const t = y / height; // 0 at top, 1 at bottom
+          const idx = i * 4;
+          data[idx]     = BG_TOP.r + (BG_BOTTOM.r - BG_TOP.r) * t | 0;
+          data[idx + 1] = BG_TOP.g + (BG_BOTTOM.g - BG_TOP.g) * t | 0;
+          data[idx + 2] = BG_TOP.b + (BG_BOTTOM.b - BG_TOP.b) * t | 0;
+          data[idx + 3] = 255; // Fully opaque — no transparency!
+        }
+      }
+
+      offCtx.putImageData(imgData, 0, 0);
+    }
+
+    // ─── Frame extraction with background replacement ───
+    async function extractFramesForColor(colorObj: any) {
+      if (!colorObj || !colorObj.video) return;
+
+      const tempVideo = document.createElement('video');
+      tempVideo.src = colorObj.video;
+      tempVideo.muted = true;
+      tempVideo.playsInline = true;
+      tempVideo.preload = 'auto';
+      tempVideo.crossOrigin = 'anonymous';
+
+      await new Promise<void>((resolve, reject) => {
+        tempVideo.onloadeddata = () => resolve();
+        tempVideo.onerror = () => reject(new Error(`Failed to load ${colorObj.video}`));
+      });
+
+      const duration = tempVideo.duration;
+      const vw = tempVideo.videoWidth || 1280;
+      const vh = tempVideo.videoHeight || 720;
+      
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = vw;
+      offCanvas.height = vh;
+      const offCtx = offCanvas.getContext('2d', { willReadFrequently: true })!;
+
+      const frames: ImageBitmap[] = [];
+
+      for (let i = 0; i < TOTAL_FRAMES; i++) {
+        tempVideo.currentTime = (i / TOTAL_FRAMES) * duration;
+        await new Promise<void>((res) => { tempVideo.onseeked = () => res(); });
+
+        offCtx.clearRect(0, 0, vw, vh);
+        offCtx.drawImage(tempVideo, 0, 0, vw, vh);
+
+        // Replace checkerboard with smooth gradient (not transparency!)
+        replaceBackgroundWithGradient(offCtx, vw, vh);
+
+        const bitmap = await createImageBitmap(offCanvas);
+        frames.push(bitmap);
+      }
+
+      framesMap[colorObj.id] = frames;
+    }
+
+    // ─── Preload all video colors in parallel ───
+    async function initPreloadAllColors() {
+      if (spinner) {
+        spinner.style.opacity = '1';
+        spinner.style.pointerEvents = 'auto';
+      }
+
+      const videoColors = colorsData.filter((c: any) => c.video);
+      await Promise.all(videoColors.map(extractFramesForColor));
+
+      if (spinner) {
+        spinner.style.opacity = '0';
+        spinner.style.pointerEvents = 'none';
+      }
+      renderFrame();
+    }
+
+    initPreloadAllColors();
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        targetFrameIndex = 0;
+        currentFrameIndex = 0;
+        renderFrame();
+      });
+    }
+
+    // ─── Drag interaction ───
+    if (container) {
+      const handleStart = (clientX: number) => {
+        isDragging = true;
+        startX = clientX;
+        startFrameIndex = targetFrameIndex;
+      };
+
+      const handleMove = (clientX: number) => {
+        if (!isDragging) return;
+        const deltaX = clientX - startX;
+        targetFrameIndex = startFrameIndex - (deltaX / DRAG_SENSITIVITY);
+      };
+
+      const handleEnd = () => { isDragging = false; };
+
+      container.addEventListener('mousedown', (e) => handleStart(e.clientX));
+      window.addEventListener('mousemove', (e) => { if (isDragging) handleMove(e.clientX); });
+      window.addEventListener('mouseup', handleEnd);
+
+      container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) handleStart(e.touches[0].clientX);
+      }, { passive: true });
+      window.addEventListener('touchmove', (e) => {
+        if (isDragging && e.touches.length === 1) handleMove(e.touches[0].clientX);
+      }, { passive: true });
+      window.addEventListener('touchend', handleEnd);
+    }
+
+    // ─── Color switcher ───
+    colorBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetColorId = btn.getAttribute('data-color-id');
+        const colorData = colorsData.find((c: any) => c.id === targetColorId);
+        
+        colorBtns.forEach(b => {
+          b.classList.remove('border-white', 'scale-110', 'shadow-md', 'ring-2', 'ring-brand');
+          b.classList.add('border-transparent', 'opacity-85');
+        });
+        btn.classList.add('border-white', 'scale-110', 'shadow-md', 'ring-2', 'ring-brand');
+        btn.classList.remove('border-transparent', 'opacity-85');
+
+        document.querySelectorAll('.fallback-img').forEach(img => (img as HTMLElement).classList.add('hidden'));
+
+        activeColorId = targetColorId || 'white';
+
+        if (colorData && colorData.video) {
+          if (canvas) canvas.classList.remove('hidden');
+          renderFrame();
+        } else {
+          if (canvas) canvas.classList.add('hidden');
+          const fallback = document.getElementById(`fallback-img-${targetColorId}`);
+          if (fallback) fallback.classList.remove('hidden');
+        }
+      });
+    });
+
+    // ─── Hotspot details ───
+    const activateHotspot = (hotspotId: string | null) => {
+      const data = hotspotsData.find((h: any) => h.id === hotspotId);
+      if (!data) return;
+
+      if (detailHeader) detailHeader.textContent = data.label;
+      if (detailDesc) detailDesc.textContent = data.description;
+      const detailIcon = document.querySelector('.detail-icon span');
+      if (detailIcon) detailIcon.textContent = data.icon;
+      
+      if (specsGrid) {
+        specsGrid.innerHTML = data.specs.map((spec: any) => `
+          <div class="spec-item bg-navy-dark border border-white/10 p-4 rounded-2xl flex flex-col gap-1 text-white">
+            <dt class="text-xs text-brand-light font-bold uppercase tracking-wider">${spec.label}</dt>
+            <dd class="text-base font-bold text-white">${spec.value}</dd>
+          </div>
+        `).join('');
+      }
+
+      if (detailContainer) {
+        detailContainer.classList.remove('hidden');
+        detailContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    };
+
+    hotspotCards.forEach(card => {
+      card.addEventListener('click', () => {
+        activateHotspot(card.getAttribute('data-hotspot-id'));
+      });
+    });
+
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        if (detailContainer) detailContainer.classList.add('hidden');
+      });
+    }
+  });
+</script>

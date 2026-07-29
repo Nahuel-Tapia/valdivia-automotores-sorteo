@@ -1,10 +1,18 @@
 import type { APIRoute } from "astro"
 import { approveOrderAndTickets } from "@/lib/services/tickets"
+import { verifyAdminRequest } from "@/lib/services/auth"
 
 export const prerender = false
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    if (!verifyAdminRequest(request)) {
+      return new Response(
+        JSON.stringify({ error: "No autorizado. Sesión de administrador requerida." }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      )
+    }
+
     const { orderId } = await request.json()
 
     if (!orderId) {

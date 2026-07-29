@@ -114,10 +114,11 @@ export const POST: APIRoute = async ({ request }) => {
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error en POST /api/checkout:", error)
+    const errorMsg = String(error?.message || error || "Error interno al procesar la compra.")
     return new Response(
-      JSON.stringify({ error: "Error interno del servidor al procesar checkout." }),
+      JSON.stringify({ error: errorMsg }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     )
   }

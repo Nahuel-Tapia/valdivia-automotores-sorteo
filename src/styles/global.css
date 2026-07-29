@@ -33,4 +33,43 @@
   .card {
     @apply rounded-2xl border border-navy/10 bg-white shadow-card;
   }
+
+  .glass-card {
+    @apply rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md;
+  }
+
+  .glass-card-dark {
+    @apply rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-lg;
+  }
+
+  .btn-electric {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-base font-semibold text-white transition-all duration-300;
+    background: linear-gradient(135deg, #1f8fd6 0%, #00D4FF 100%);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+
+  .btn-electric:hover {
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+    transform: translateY(-1px);
+  }
+}
+
+@layer utilities {
+  .text-gradient-electric {
+    background: linear-gradient(135deg, #1f8fd6, #00D4FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-showroom-gradient {
+    background: radial-gradient(ellipse at 50% 40%, #121829 0%, #0A0E1A 70%);
+  }
+
+  .bg-grid-pattern {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
 }

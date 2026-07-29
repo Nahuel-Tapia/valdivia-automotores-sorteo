@@ -7,14 +7,25 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const { number, sessionId } = await request.json()
 
-    if (!number || !sessionId) {
+    const numStr = String(number ?? "").padStart(3, "0")
+    const sessStr = String(sessionId ?? "").trim()
+
+    if (!/^\d{3}$/.test(numStr) || !sessStr || sessStr.length > 100) {
       return new Response(
-        JSON.stringify({ error: "Número y ID de sesión requeridos." }),
+        JSON.stringify({ error: "Formato de número o ID de sesión inválido." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       )
     }
 
-    const res = await toggleSeatLock(String(number), String(sessionId))
+    const numVal = parseInt(numStr, 10)
+    if (numVal < 1 || numVal > 200) {
+      return new Response(
+        JSON.stringify({ error: "El número debe estar entre 001 y 200." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      )
+    }
+
+    const res = await toggleSeatLock(numStr, sessStr)
 
     if (!res.success) {
       return new Response(

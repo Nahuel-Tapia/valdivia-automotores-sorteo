@@ -1,10 +1,18 @@
 import type { APIRoute } from "astro"
 import { db, initDB } from "@/lib/db"
+import { verifyAdminRequest } from "@/lib/services/auth"
 
 export const prerender = false
 
 export const GET: APIRoute = async ({ request }) => {
   try {
+    if (!verifyAdminRequest(request)) {
+      return new Response(
+        JSON.stringify({ error: "No autorizado. Sesión de administrador requerida." }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      )
+    }
+
     await initDB()
     const url = new URL(request.url)
     const orderId = url.searchParams.get("orderId")
