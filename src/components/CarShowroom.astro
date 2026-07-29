@@ -392,7 +392,32 @@ const hotspots = carHotspots || [];
       }
     }
 
-    // ─── Fast Frame Extractor (IndexedDB + Scaled BFS) ───
+    // ─── Mobile-Safe Video Seek Helper ───
+    const seekVideoFrame = (v: HTMLVideoElement, targetTime: number): Promise<void> => {
+      return new Promise((resolve) => {
+        let isDone = false;
+        const handleSeeked = () => {
+          if (!isDone) {
+            isDone = true;
+            v.removeEventListener('seeked', handleSeeked);
+            resolve();
+          }
+        };
+        v.addEventListener('seeked', handleSeeked);
+        v.currentTime = targetTime;
+
+        // Safety timeout for mobile devices that stall on video seeking
+        setTimeout(() => {
+          if (!isDone) {
+            isDone = true;
+            v.removeEventListener('seeked', handleSeeked);
+            resolve();
+          }
+        }, 600);
+      });
+    };
+
+    // ─── Fast & Mobile-Compatible Frame Extractor ───
     async function extractFramesForColor(colorObj: any): Promise<void> {
       if (!colorObj || !colorObj.video) return;
       if (framesMap[colorObj.id]) return;
@@ -411,82 +436,114 @@ const hotspots = carHotspots || [];
         return;
       }
 
-      // 2. VIDEO EXTRACTION PATH (Scaled to 800px for 2.5x faster BFS processing)
+      // 2. MOBILE-SAFE VIDEO EXTRACTION
       const tempVideo = document.createElement('video');
       tempVideo.src = colorObj.video;
       tempVideo.muted = true;
       tempVideo.playsInline = true;
-      tempVideo.preload = 'auto';
-      tempVideo.crossOrigin = 'anonymous';
+      tempVideo.setAttribute('muted', 'true');
+      tempVideo.setAttribute('playsinline', 'true');
+      tempVideo.setAttribute('webkit-playsinline', 'true');
 
-      await new Promise<void>((resolve, reject) => {
-        tempVideo.onloadeddata = () => resolve();
-        tempVideo.onerror = () => reject(new Error(`Failed to load ${colorObj.video}`));
-      });
+      // Mobile Safari requirement: video MUST be in DOM to decode frames reliably
+      tempVideo.style.position = 'fixed';
+      tempVideo.style.top = '-9999px';
+      tempVideo.style.left = '-9999px';
+      tempVideo.style.width = '1px';
+      tempVideo.style.height = '1px';
+      tempVideo.style.opacity = '0';
+      tempVideo.style.pointerEvents = 'none';
+      document.body.appendChild(tempVideo);
 
-      const duration = tempVideo.duration;
-      const rawW = tempVideo.videoWidth || 1280;
-      const rawH = tempVideo.videoHeight || 720;
-      
-      // Scale resolution to max 800px width for ultra fast pixel operations
-      const scaleFactor = Math.min(1, 800 / rawW);
-      const vw = Math.round(rawW * scaleFactor);
-      const vh = Math.round(rawH * scaleFactor);
+      try {
+        tempVideo.load();
 
-      const offCanvas = document.createElement('canvas');
-      offCanvas.width = vw;
-      offCanvas.height = vh;
-      const offCtx = offCanvas.getContext('2d', { willReadFrequently: true })!;
+        await Promise.race([
+          new Promise<void>((resolve, reject) => {
+            tempVideo.onloadeddata = () => resolve();
+            tempVideo.onerror = () => reject(new Error(`Failed to load ${colorObj.video}`));
+          }),
+          new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Video load timeout')), 3000)),
+        ]);
 
-      const frames: ImageBitmap[] = [];
-      const canvasStore: HTMLCanvasElement[] = [];
+        const duration = tempVideo.duration || 2;
+        const rawW = tempVideo.videoWidth || 1280;
+        const rawH = tempVideo.videoHeight || 720;
 
-      // Frame 0: Display IMMEDIATELY (< 50ms)!
-      tempVideo.currentTime = 0;
-      await new Promise<void>((res) => { tempVideo.onseeked = () => res(); });
-      offCtx.clearRect(0, 0, vw, vh);
-      offCtx.drawImage(tempVideo, 0, 0, vw, vh);
-      replaceBackgroundWithGradient(offCtx, vw, vh);
+        const scaleFactor = Math.min(1, 800 / rawW);
+        const vw = Math.round(rawW * scaleFactor);
+        const vh = Math.round(rawH * scaleFactor);
 
-      const frame0Canvas = document.createElement('canvas');
-      frame0Canvas.width = vw;
-      frame0Canvas.height = vh;
-      frame0Canvas.getContext('2d')!.drawImage(offCanvas, 0, 0);
-      canvasStore.push(frame0Canvas);
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = vw;
+        offCanvas.height = vh;
+        const offCtx = offCanvas.getContext('2d', { willReadFrequently: true })!;
 
-      const frame0 = await createImageBitmap(offCanvas);
-      frames.push(frame0);
-      framesMap[colorObj.id] = frames;
+        const frames: ImageBitmap[] = [];
+        const canvasStore: HTMLCanvasElement[] = [];
 
-      if (colorObj.id === activeColorId) {
-        if (spinner) {
-          spinner.style.opacity = '0';
-          spinner.style.pointerEvents = 'none';
-        }
-        renderFrame();
-      }
-
-      // Extract remaining frames asynchronously in background
-      for (let i = 1; i < TOTAL_FRAMES; i++) {
-        tempVideo.currentTime = (i / TOTAL_FRAMES) * duration;
-        await new Promise<void>((res) => { tempVideo.onseeked = () => res(); });
-
+        // Frame 0: Render IMMEDIATELY for Instant Mobile Feedback (< 50ms)
+        await seekVideoFrame(tempVideo, 0);
         offCtx.clearRect(0, 0, vw, vh);
         offCtx.drawImage(tempVideo, 0, 0, vw, vh);
         replaceBackgroundWithGradient(offCtx, vw, vh);
 
-        const frameCanvas = document.createElement('canvas');
-        frameCanvas.width = vw;
-        frameCanvas.height = vh;
-        frameCanvas.getContext('2d')!.drawImage(offCanvas, 0, 0);
-        canvasStore.push(frameCanvas);
+        const frame0Canvas = document.createElement('canvas');
+        frame0Canvas.width = vw;
+        frame0Canvas.height = vh;
+        frame0Canvas.getContext('2d')!.drawImage(offCanvas, 0, 0);
+        canvasStore.push(frame0Canvas);
 
-        const bitmap = await createImageBitmap(offCanvas);
-        frames.push(bitmap);
+        const frame0 = await createImageBitmap(offCanvas);
+        frames.push(frame0);
+        framesMap[colorObj.id] = frames;
+
+        if (colorObj.id === activeColorId) {
+          if (spinner) {
+            spinner.style.opacity = '0';
+            spinner.style.pointerEvents = 'none';
+          }
+          renderFrame();
+        }
+
+        // Extract remaining frames asynchronously
+        for (let i = 1; i < TOTAL_FRAMES; i++) {
+          const frameTime = (i / TOTAL_FRAMES) * duration;
+          await seekVideoFrame(tempVideo, frameTime);
+
+          offCtx.clearRect(0, 0, vw, vh);
+          offCtx.drawImage(tempVideo, 0, 0, vw, vh);
+          replaceBackgroundWithGradient(offCtx, vw, vh);
+
+          const frameCanvas = document.createElement('canvas');
+          frameCanvas.width = vw;
+          frameCanvas.height = vh;
+          frameCanvas.getContext('2d')!.drawImage(offCanvas, 0, 0);
+          canvasStore.push(frameCanvas);
+
+          const bitmap = await createImageBitmap(offCanvas);
+          frames.push(bitmap);
+        }
+
+        saveCachedFrames(colorObj.id, canvasStore);
+      } catch (error) {
+        console.warn(`Mobile video extraction fallback for ${colorObj.id}:`, error);
+
+        // Fallback: If video decoding is restricted by mobile data saver, show static HD car image cleanly
+        if (colorObj.id === activeColorId) {
+          if (spinner) {
+            spinner.style.opacity = '0';
+            spinner.style.pointerEvents = 'none';
+          }
+          if (canvas) canvas.classList.add('hidden');
+          const fallback = document.getElementById(`fallback-img-${colorObj.id}`);
+          if (fallback) fallback.classList.remove('hidden');
+        }
+      } finally {
+        if (tempVideo.parentNode) {
+          tempVideo.parentNode.removeChild(tempVideo);
+        }
       }
-
-      // Save to IndexedDB for instant future reloads
-      saveCachedFrames(colorObj.id, canvasStore);
     }
 
     function loadColorVideo(colorObj: any): Promise<void> {

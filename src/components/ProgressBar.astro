@@ -1,5 +1,18 @@
 ---
-import { raffle } from "@/data/raffle"
+import { db, initDB } from "@/lib/db"
+
+let paidTickets = 0
+const totalTickets = 200
+
+try {
+  await initDB()
+  const res = await db.execute("SELECT COUNT(*) as paidCount FROM tickets WHERE status = 'paid'")
+  paidTickets = Number(res.rows[0]?.paidCount || 0)
+} catch (error) {
+  console.error("Error consultando conteo de boletos vendidos para ProgressBar:", error)
+}
+
+const percentage = Math.min(100, Math.round((paidTickets / totalTickets) * 100))
 ---
 
 <section class="container-app -mt-6 pb-4 pt-16">
@@ -9,12 +22,15 @@ import { raffle } from "@/data/raffle"
         <h2 class="font-display text-lg font-700 text-navy">Números vendidos</h2>
         <p class="text-sm text-navy/60">No te quedes afuera, quedan pocos disponibles.</p>
       </div>
-      <span class="font-display text-2xl font-800 text-brand">{raffle.soldPercentage}%</span>
+      <div class="text-right">
+        <span class="font-display text-2xl sm:text-3xl font-800 text-brand">{paidTickets} de {totalTickets}</span>
+        <span class="block text-xs font-600 text-navy/60 uppercase tracking-wider">{percentage}% Vendido</span>
+      </div>
     </div>
-    <div class="mt-4 h-3 w-full overflow-hidden rounded-full bg-cloud">
+    <div class="mt-4 h-3.5 w-full overflow-hidden rounded-full bg-cloud border border-navy/5">
       <div
-        class="h-full rounded-full bg-gradient-to-r from-brand to-brand-light"
-        style={`width: ${raffle.soldPercentage}%`}
+        class="h-full rounded-full bg-gradient-to-r from-brand to-brand-light transition-all duration-500 shadow-sm"
+        style={`width: ${Math.max(percentage, 2)}%`}
       >
       </div>
     </div>
