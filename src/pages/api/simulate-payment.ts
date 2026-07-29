@@ -36,14 +36,18 @@ export const POST: APIRoute = async ({ request }) => {
     const paymentStatus = status === "rejected" ? "rejected" : "approved"
     const paymentId = `SIM-${paymentStatus.toUpperCase()}-${Date.now()}`
 
-    const success =
-      paymentStatus === "rejected"
-        ? await rejectOrderAndReleaseTickets(String(orderId), paymentId)
-        : await approveOrderAndTickets(String(orderId), paymentId)
+    let res: { success: boolean; expired?: boolean; reason?: string } = { success: false }
 
-    if (!success) {
+    if (paymentStatus === "rejected") {
+      const rejected = await rejectOrderAndReleaseTickets(String(orderId), paymentId)
+      res = { success: rejected }
+    } else {
+      res = await approveOrderAndTickets(String(orderId), paymentId)
+    }
+
+    if (!res.success) {
       return new Response(
-        JSON.stringify({ error: "No se encontro la orden especificada o no puede cambiar de estado." }),
+        JSON.stringify({ error: res.reason || "No se encontro la orden especificada o ya expiro la reserva." }),
         { status: 404, headers: { "Content-Type": "application/json" } }
       )
     }

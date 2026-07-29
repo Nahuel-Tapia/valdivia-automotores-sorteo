@@ -22,11 +22,11 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
-    const success = await approveOrderAndTickets(orderId, "ADMIN_MANUAL_APPROVAL")
+    const res = await approveOrderAndTickets(orderId, "ADMIN_MANUAL_APPROVAL", { ignoreExpiration: true })
 
-    if (!success) {
+    if (!res.success) {
       return new Response(
-        JSON.stringify({ error: "No se pudo encontrar o aprobar la orden." }),
+        JSON.stringify({ error: res.reason || "No se pudo encontrar o aprobar la orden." }),
         { status: 404, headers: { "Content-Type": "application/json" } }
       )
     }

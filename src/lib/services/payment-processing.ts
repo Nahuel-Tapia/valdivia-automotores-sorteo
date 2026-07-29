@@ -11,8 +11,8 @@ export async function processMercadoPagoPaymentStatus(
   if (!payment.orderId || !payment.status) return "ignored"
 
   if (payment.status === "approved") {
-    const approved = await approveOrderAndTickets(payment.orderId, payment.id)
-    return approved ? "approved" : "ignored"
+    const res = await approveOrderAndTickets(payment.orderId, payment.id)
+    return res.success ? "approved" : "rejected"
   }
 
   if (rejectedStatuses.has(payment.status)) {

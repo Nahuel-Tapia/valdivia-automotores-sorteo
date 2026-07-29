@@ -288,17 +288,49 @@ export async function reserveTicketsAtomic(
 }
 
 /** Aprobar el pago de una orden y marcar sus tickets como 'paid' definitivamente */
-export async function approveOrderAndTickets(orderId: string, mpPaymentId?: string): Promise<boolean> {
+export async function approveOrderAndTickets(
+  orderId: string,
+  mpPaymentId?: string,
+  options?: { ignoreExpiration?: boolean }
+): Promise<{ success: boolean; expired?: boolean; reason?: string }> {
   await initDB()
   const now = Date.now()
+  const MAX_RESERVATION_MS = 10 * 60 * 1000 // 10 minutos
 
   const orderCheck = await db.execute({
-    sql: "SELECT buyer_name, buyer_email, total_amount, status FROM orders WHERE id = ?",
+    sql: "SELECT buyer_name, buyer_email, total_amount, status, created_at FROM orders WHERE id = ?",
     args: [orderId],
   })
 
-  if (orderCheck.rows.length === 0) return false
+  if (orderCheck.rows.length === 0) return { success: false, reason: "Orden no encontrada." }
   const orderData = orderCheck.rows[0]
+
+  // Si ya fue aprobada previamente
+  if (String(orderData.status) === "approved") {
+    return { success: true }
+  }
+
+  // 1. Control estricto de expiración de 10 minutos
+  const createdAt = Number(orderData.created_at) || 0
+  const elapsedMs = now - createdAt
+
+  if (!options?.ignoreExpiration && elapsedMs > MAX_RESERVATION_MS) {
+    console.warn(`⏳ Orden #${orderId} excedió el tiempo límite de compra (${Math.round(elapsedMs / 60000)} min). Rechazando...`)
+    await rejectOrderAndReleaseTickets(orderId, mpPaymentId || "EXPIRED_TIME_LIMIT")
+    return { success: false, expired: true, reason: "Tiempo límite de compra (10 minutos) excedido." }
+  }
+
+  // 2. Verificar que los tickets asociados aún pertenezcan a esta orden y estén reservados
+  const ticketsRes = await db.execute({
+    sql: "SELECT number FROM tickets WHERE order_id = ?",
+    args: [orderId],
+  })
+
+  if (ticketsRes.rows.length === 0) {
+    console.warn(`⏳ La orden #${orderId} no tiene boletos reservados vinculados (expiraron o fueron liberados).`)
+    await rejectOrderAndReleaseTickets(orderId, mpPaymentId || "EXPIRED_NO_TICKETS")
+    return { success: false, expired: true, reason: "Los boletos reservados han expirado y fueron liberados." }
+  }
 
   // Actualización atómica de orden y boletos vinculados
   await db.batch(
@@ -315,12 +347,6 @@ export async function approveOrderAndTickets(orderId: string, mpPaymentId?: stri
     "write"
   )
 
-  // Obtener números de boletos pagados para enviar el email
-  const ticketsRes = await db.execute({
-    sql: "SELECT number FROM tickets WHERE order_id = ? ORDER BY number ASC",
-    args: [orderId],
-  })
-
   const tickets = ticketsRes.rows.map((r) => String(r.number))
 
   // Enviar email de confirmación
@@ -332,7 +358,7 @@ export async function approveOrderAndTickets(orderId: string, mpPaymentId?: stri
     totalAmount: Number(orderData.total_amount),
   })
 
-  return true
+  return { success: true }
 }
 
 /** Rechazar orden y liberar números */

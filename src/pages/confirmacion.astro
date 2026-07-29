@@ -27,7 +27,10 @@ if (paymentId && token) {
     const payment = await getMercadoPagoPaymentStatus(paymentId)
     const targetOrder = payment.orderId || orderId
     if (targetOrder && (payment.status === "approved" || status === "approved")) {
-      await approveOrderAndTickets(targetOrder, paymentId)
+      const res = await approveOrderAndTickets(targetOrder, paymentId)
+      if (!res.success) {
+        return Astro.redirect(`/pago-rechazado?orderId=${targetOrder}&reason=${res.expired ? "expired" : "failed"}`)
+      }
     } else if (targetOrder && (payment.status === "rejected" || payment.status === "cancelled" || status === "rejected" || status === "failure")) {
       await rejectOrderAndReleaseTickets(targetOrder, paymentId)
       return Astro.redirect(`/pago-rechazado?orderId=${targetOrder}`)
@@ -37,7 +40,10 @@ if (paymentId && token) {
   }
 } else if (orderId && status === "approved") {
   try {
-    await approveOrderAndTickets(orderId, paymentId || undefined)
+    const res = await approveOrderAndTickets(orderId, paymentId || undefined)
+    if (!res.success) {
+      return Astro.redirect(`/pago-rechazado?orderId=${orderId}&reason=${res.expired ? "expired" : "failed"}`)
+    }
   } catch (error) {
     console.error("Error aprobando orden al retornar de MP:", error)
   }

@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro"
-import { XCircle, Home, RefreshCw } from "lucide-astro"
+import { XCircle, Clock, Home, RefreshCw } from "lucide-astro"
 import { getMercadoPagoPaymentStatus, getAccessToken } from "@/lib/services/mercadopago"
 import { rejectOrderAndReleaseTickets } from "@/lib/services/tickets"
 
@@ -8,6 +8,9 @@ export const prerender = false
 
 const paymentId = Astro.url.searchParams.get("payment_id") || Astro.url.searchParams.get("collection_id")
 const orderId = Astro.url.searchParams.get("external_reference") || Astro.url.searchParams.get("orderId")
+const reason = Astro.url.searchParams.get("reason")
+const isExpired = reason === "expired"
+
 let processed = false
 
 const token = getAccessToken()
@@ -31,21 +34,40 @@ if (paymentId && token) {
 }
 ---
 
-<Layout title="Pago no completado | Valdivia Automotores">
+<Layout title={isExpired ? "Tiempo de reserva excedido | Valdivia Automotores" : "Pago no completado | Valdivia Automotores"}>
   <section class="container-app py-16">
     <div class="mx-auto max-w-2xl text-center">
-      <span class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-red-600">
-        <XCircle class="h-11 w-11" />
-      </span>
-      <span class="mt-6 block text-sm font-semibold uppercase tracking-[0.16em] text-red-600">Pago Rechazado / Cancelado</span>
-      <h1 class="mt-2 font-display text-3xl font-800 text-navy sm:text-4xl">No se pudo completar el pago</h1>
-      <p class="mt-3 text-navy/70">
-        La transacción no fue aprobada por Mercado Pago. Los boletos seleccionados han sido liberados automáticamente para que puedas seleccionar tus números de nuevo.
-      </p>
+      {isExpired ? (
+        <>
+          <span class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+            <Clock class="h-11 w-11" />
+          </span>
+          <span class="mt-6 block text-sm font-semibold uppercase tracking-[0.16em] text-amber-600">Tiempo de Compra Excedido (10 min)</span>
+          <h1 class="mt-2 font-display text-3xl font-800 text-navy sm:text-4xl">Se excedió el tiempo límite de compra</h1>
+          <p class="mt-3 text-navy/70">
+            El tiempo asignado de 10 minutos para completar el pago de tus boletos ha finalizado. Los números seleccionados han sido liberados automáticamente para permitir que otros compradores puedan elegirlos.
+          </p>
 
-      <p class="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-700 text-emerald-700">
-        ✅ Reserva liberada correctamente. Los números ya se encuentran disponibles en la grilla.
-      </p>
+          <p class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm font-700 text-amber-800 border border-amber-200">
+            ⏰ Reserva de números liberada. Por favor, vuelve a ingresar a la grilla y selecciona nuevamente tus números.
+          </p>
+        </>
+      ) : (
+        <>
+          <span class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <XCircle class="h-11 w-11" />
+          </span>
+          <span class="mt-6 block text-sm font-semibold uppercase tracking-[0.16em] text-red-600">Pago Rechazado / Cancelado</span>
+          <h1 class="mt-2 font-display text-3xl font-800 text-navy sm:text-4xl">No se pudo completar el pago</h1>
+          <p class="mt-3 text-navy/70">
+            La transacción no fue aprobada por Mercado Pago. Los boletos seleccionados han sido liberados automáticamente para que puedas seleccionar tus números de nuevo.
+          </p>
+
+          <p class="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-700 text-emerald-700">
+            ✅ Reserva liberada correctamente. Los números ya se encuentran disponibles en la grilla.
+          </p>
+        </>
+      )}
 
       <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
         <a href="/participar" class="btn-primary">
