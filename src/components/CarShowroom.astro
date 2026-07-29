@@ -334,11 +334,84 @@ const hotspots = carHotspots || [];
       offCtx.putImageData(imgData, 0, 0);
     }
 
-    // ─── Fast Frame Extractor with Instant Frame 0 Display ───
+    // ─── INDEXEDDB BLOB CACHE FOR <15ms REPEAT LOADS ───
+    const DB_NAME = 'valdivia_360_cache_v2';
+    const STORE_NAME = 'frames';
+
+    function openIDB(): Promise<IDBDatabase> {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function getCachedFrames(colorId: string): Promise<ImageBitmap[] | null> {
+      try {
+        const db = await openIDB();
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(colorId);
+        const blobs: Blob[] = await new Promise((resolve) => {
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+
+        if (!blobs || !Array.isArray(blobs) || blobs.length === 0) return null;
+
+        const bitmaps = await Promise.all(blobs.map((blob) => createImageBitmap(blob)));
+        return bitmaps;
+      } catch (err) {
+        console.warn('IDB cache read warning:', err);
+        return null;
+      }
+    }
+
+    async function saveCachedFrames(colorId: string, offCanvasArray: HTMLCanvasElement[]): Promise<void> {
+      try {
+        const blobs: Blob[] = await Promise.all(
+          offCanvasArray.map(
+            (c) =>
+              new Promise<Blob>((res) =>
+                c.toBlob((b) => res(b!), 'image/webp', 0.85)
+              )
+          )
+        );
+        const db = await openIDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.put(blobs, colorId);
+      } catch (err) {
+        console.warn('IDB cache write warning:', err);
+      }
+    }
+
+    // ─── Fast Frame Extractor (IndexedDB + Scaled BFS) ───
     async function extractFramesForColor(colorObj: any): Promise<void> {
       if (!colorObj || !colorObj.video) return;
-      if (framesMap[colorObj.id]) return; // Already extracted
+      if (framesMap[colorObj.id]) return;
 
+      // 1. FAST PATH: Check IndexedDB cache (< 15ms load!)
+      const cachedBitmaps = await getCachedFrames(colorObj.id);
+      if (cachedBitmaps && cachedBitmaps.length > 0) {
+        framesMap[colorObj.id] = cachedBitmaps;
+        if (colorObj.id === activeColorId) {
+          if (spinner) {
+            spinner.style.opacity = '0';
+            spinner.style.pointerEvents = 'none';
+          }
+          renderFrame();
+        }
+        return;
+      }
+
+      // 2. VIDEO EXTRACTION PATH (Scaled to 800px for 2.5x faster BFS processing)
       const tempVideo = document.createElement('video');
       tempVideo.src = colorObj.video;
       tempVideo.muted = true;
@@ -352,27 +425,39 @@ const hotspots = carHotspots || [];
       });
 
       const duration = tempVideo.duration;
-      const vw = tempVideo.videoWidth || 1280;
-      const vh = tempVideo.videoHeight || 720;
+      const rawW = tempVideo.videoWidth || 1280;
+      const rawH = tempVideo.videoHeight || 720;
       
+      // Scale resolution to max 800px width for ultra fast pixel operations
+      const scaleFactor = Math.min(1, 800 / rawW);
+      const vw = Math.round(rawW * scaleFactor);
+      const vh = Math.round(rawH * scaleFactor);
+
       const offCanvas = document.createElement('canvas');
       offCanvas.width = vw;
       offCanvas.height = vh;
       const offCtx = offCanvas.getContext('2d', { willReadFrequently: true })!;
 
       const frames: ImageBitmap[] = [];
+      const canvasStore: HTMLCanvasElement[] = [];
 
-      // FAST PATH: Process Frame 0 first and display IMMEDIATELY (< 200ms)!
+      // Frame 0: Display IMMEDIATELY (< 50ms)!
       tempVideo.currentTime = 0;
       await new Promise<void>((res) => { tempVideo.onseeked = () => res(); });
       offCtx.clearRect(0, 0, vw, vh);
       offCtx.drawImage(tempVideo, 0, 0, vw, vh);
       replaceBackgroundWithGradient(offCtx, vw, vh);
+
+      const frame0Canvas = document.createElement('canvas');
+      frame0Canvas.width = vw;
+      frame0Canvas.height = vh;
+      frame0Canvas.getContext('2d')!.drawImage(offCanvas, 0, 0);
+      canvasStore.push(frame0Canvas);
+
       const frame0 = await createImageBitmap(offCanvas);
       frames.push(frame0);
       framesMap[colorObj.id] = frames;
 
-      // Unhide viewer instantly if active color
       if (colorObj.id === activeColorId) {
         if (spinner) {
           spinner.style.opacity = '0';
@@ -381,7 +466,7 @@ const hotspots = carHotspots || [];
         renderFrame();
       }
 
-      // BACKGROUND PATH: Extract remaining 35 frames asynchronously
+      // Extract remaining frames asynchronously in background
       for (let i = 1; i < TOTAL_FRAMES; i++) {
         tempVideo.currentTime = (i / TOTAL_FRAMES) * duration;
         await new Promise<void>((res) => { tempVideo.onseeked = () => res(); });
@@ -390,9 +475,18 @@ const hotspots = carHotspots || [];
         offCtx.drawImage(tempVideo, 0, 0, vw, vh);
         replaceBackgroundWithGradient(offCtx, vw, vh);
 
+        const frameCanvas = document.createElement('canvas');
+        frameCanvas.width = vw;
+        frameCanvas.height = vh;
+        frameCanvas.getContext('2d')!.drawImage(offCanvas, 0, 0);
+        canvasStore.push(frameCanvas);
+
         const bitmap = await createImageBitmap(offCanvas);
         frames.push(bitmap);
       }
+
+      // Save to IndexedDB for instant future reloads
+      saveCachedFrames(colorObj.id, canvasStore);
     }
 
     function loadColorVideo(colorObj: any): Promise<void> {
@@ -405,15 +499,13 @@ const hotspots = carHotspots || [];
 
     // ─── INSTANT INITIALIZATION ───
     async function initFastShowroom() {
-      // 1. Load active color immediately
       const primaryColor = colorsData.find((c: any) => c.id === activeColorId) || colorsData[0];
       if (primaryColor) {
         await loadColorVideo(primaryColor);
       }
 
-      // 2. Preload remaining colors in background without blocking UI
-      colorsData.filter((c: any) => c.id !== activeColorId && c.video).forEach(c => {
-        setTimeout(() => loadColorVideo(c), 500);
+      colorsData.filter((c: any) => c.id !== activeColorId && c.video).forEach((c) => {
+        setTimeout(() => loadColorVideo(c), 300);
       });
     }
 

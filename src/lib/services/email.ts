@@ -12,7 +12,7 @@ function getResendConfig(): { resend: Resend | null; from: string } {
     key = process.env.RESEND_API_KEY
   }
 
-  let from = "onboarding@resend.dev"
+  let from = "Valdivia Automotores <onboarding@resend.dev>"
   try {
     const metaFrom = (import.meta as any).env?.RESEND_FROM_EMAIL || (import.meta as any).env?.MAIL_FROM
     if (metaFrom) from = String(metaFrom)
@@ -74,16 +74,22 @@ async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean
   }
 
   try {
-    await resend.emails.send({
+    const res = await resend.emails.send({
       from,
       to,
       subject,
       html,
     })
-    console.log(`[MAIL] Enviado automáticamente a ${to}: ${subject}`)
+
+    if (res.error) {
+      console.error("[MAIL ERROR] Error devuelto por Resend API:", res.error)
+      return false
+    }
+
+    console.log(`[MAIL SUCCESS] Enviado exitosamente a ${to} (ID: ${res.data?.id})`)
     return true
   } catch (error) {
-    console.error("[MAIL] Error enviando correo:", error)
+    console.error("[MAIL EXCEPTION] Excepción enviando correo:", error)
     return false
   }
 }
