@@ -208,7 +208,7 @@ const hotspots = carHotspots || [];
 
     const framesMap: Record<string, ImageBitmap[]> = {};
     
-    let activeColorId = 'white';
+    let activeColorId = 'green';
     let targetFrameIndex = 0;
     let currentFrameIndex = 0;
     let isDragging = false;
@@ -472,7 +472,7 @@ const hotspots = carHotspots || [];
 
         document.querySelectorAll('.fallback-img').forEach(img => (img as HTMLElement).classList.add('hidden'));
 
-        activeColorId = targetColorId || 'white';
+        activeColorId = targetColorId || 'green';
 
         if (colorData && colorData.video) {
           if (canvas) canvas.classList.remove('hidden');
