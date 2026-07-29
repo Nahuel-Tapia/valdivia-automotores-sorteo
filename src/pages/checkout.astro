@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro"
-import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "lucide-astro"
+import { Lock, ArrowRight, CreditCard, Wallet, ShieldCheck } from "lucide-astro"
 ---
 
 <Layout title="Checkout | Valdivia Automotores">
@@ -92,47 +92,22 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
         </div>
       </fieldset>
 
-      <!-- Método de pago -->
+      <!-- Método de pago (100% Pasarela Oficial Mercado Pago) -->
       <fieldset class="card p-6">
-        <legend class="px-2 font-display text-lg font-700 text-navy">Método de pago</legend>
-        <div class="mt-4 space-y-3">
-          <label class="pay-method flex cursor-pointer items-center gap-4 rounded-xl border-2 border-brand bg-brand/5 p-4">
-            <input type="radio" name="pay" value="mercadopago" checked class="h-4 w-4 accent-brand" />
-            <Wallet class="h-6 w-6 text-brand" />
-            <span class="flex-1">
-              <span class="block font-700 text-navy">Mercado Pago</span>
-              <span class="block text-sm text-navy/60">Dinero en cuenta, tarjetas de crédito/débito y Rapipago/PagoFácil</span>
-            </span>
-            <span class="rounded-md bg-[#009ee3] px-2.5 py-1 text-xs font-800 text-white">MP</span>
-          </label>
-          <label class="pay-method flex cursor-pointer items-center gap-4 rounded-xl border-2 border-navy/10 p-4">
-            <input type="radio" name="pay" value="transferencia" class="h-4 w-4 accent-brand" />
-            <Landmark class="h-6 w-6 text-navy/70" />
-            <span class="flex-1">
-              <span class="block font-700 text-navy">Transferencia Bancaria Directa</span>
-              <span class="block text-sm text-navy/60">CBU / Alias oficial con validación manual</span>
-            </span>
-          </label>
-        </div>
-
-        <!-- Bloque informativo de CBU/Alias (oculto por defecto) -->
-        <div id="transfer-info" class="hidden mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs space-y-2 text-amber-950">
-          <p class="font-700 text-sm text-amber-900">🏦 Datos para la Transferencia Bancaria:</p>
-          <div class="grid grid-cols-2 gap-2 font-mono">
-            <div><strong>Banco:</strong> Banco Galicia</div>
-            <div><strong>Titular:</strong> Valdivia Automotores S.A.</div>
-            <div><strong>Alias:</strong> VALDIVIA.SORTEO.MP</div>
-            <div><strong>CUIT:</strong> 30-71234567-8</div>
-            <div class="col-span-2"><strong>CBU:</strong> 0070123420000012345678</div>
-          </div>
-          <p class="text-[11px] text-amber-800/80 pt-1 border-t border-amber-200">
-            Al confirmar la orden, tus boletos quedarán reservados y recibirás las instrucciones por correo. El pago será verificado en el panel de administración.
-          </p>
+        <legend class="px-2 font-display text-lg font-700 text-navy">Pasarela de pago oficial</legend>
+        <input type="hidden" name="pay" value="mercadopago" />
+        <div class="mt-4 flex items-center gap-4 rounded-xl border-2 border-brand bg-brand/5 p-4">
+          <Wallet class="h-6 w-6 text-brand" />
+          <span class="flex-1">
+            <span class="block font-700 text-navy">Mercado Pago</span>
+            <span class="block text-sm text-navy/60">Dinero en cuenta, tarjetas de crédito/débito y Rapipago/PagoFácil</span>
+          </span>
+          <span class="rounded-md bg-[#009ee3] px-2.5 py-1 text-xs font-800 text-white">MP</span>
         </div>
 
         <p class="mt-4 flex items-center gap-2 text-xs text-navy/50">
           <ShieldCheck class="h-4 w-4 text-brand" />
-          Procesamiento cifrado con certificado de seguridad SSL.
+          Procesamiento cifrado con certificado de seguridad SSL y protección al comprador.
         </p>
       </fieldset>
     </div>
@@ -224,34 +199,6 @@ import { Lock, ArrowRight, CreditCard, Wallet, Landmark, ShieldCheck } from "luc
       inputPhone.value = inputPhone.value.replace(/\D/g, "").slice(0, 11)
       if (errPhone) errPhone.classList.add("hidden")
     })
-
-    const methods = Array.from(document.querySelectorAll<HTMLElement>(".pay-method"))
-    const payLabel = document.getElementById("pay-label")
-    const labels: Record<string, string> = {
-      mercadopago: "Pagar con Mercado Pago",
-      transferencia: "Confirmar orden por Transferencia",
-    }
-
-    const syncMethods = () => {
-      methods.forEach((m) => {
-        const input = m.querySelector<HTMLInputElement>('input[type="radio"]')
-        const active = input?.checked
-        m.classList.toggle("border-brand", !!active)
-        m.classList.toggle("bg-brand/5", !!active)
-        m.classList.toggle("border-navy/10", !active)
-
-        if (active) {
-          if (payLabel) payLabel.textContent = labels[input!.value] ?? "Pagar"
-          if (input!.value === "transferencia") {
-            transferInfo?.classList.remove("hidden")
-          } else {
-            transferInfo?.classList.add("hidden")
-          }
-        }
-      })
-    }
-    methods.forEach((m) => m.addEventListener("change", syncMethods))
-    syncMethods()
 
     form?.addEventListener("submit", async (e) => {
       e.preventDefault()

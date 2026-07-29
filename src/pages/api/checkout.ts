@@ -10,7 +10,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     await initDB()
     const body = await request.json()
-    const { tickets, selectedNumbers, sessionId, buyer, paymentMethod } = body
+    const { tickets, selectedNumbers, sessionId, buyer } = body
 
     const count = Number(tickets)
     if (!count || count < 1) {
@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ request }) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/
     if (!emailRegex.test(emailStr)) {
       return new Response(
-        JSON.stringify({ error: "El formato de correo debe ser válido (debe contener @ y .com)." }),
+        JSON.stringify({ error: "El email ingresado no respeta el formato válido (debe incluir @ y dominio como .com)." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       )
     }
@@ -59,82 +59,57 @@ export const POST: APIRoute = async ({ request }) => {
     const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`
     const now = Date.now()
 
-    // 1. Crear Orden en DB con estado 'pending'
-    await db.execute({
-      sql: `INSERT INTO orders (id, buyer_name, buyer_email, buyer_dni, buyer_phone, ticket_count, total_amount, status, payment_method, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-      args: [
-        orderId,
-        String(buyer.name),
-        String(buyer.email),
-        String(buyer.dni),
-        String(buyer.phone),
-        count,
-        expectedAmount,
-        paymentMethod || "mercadopago",
-        now,
-      ],
-    })
-
-    // 2. Bloqueo atómico de tickets en DB
-    const requestTarget = Array.isArray(selectedNumbers) && selectedNumbers.length === count ? selectedNumbers : count
+    // 1. Reserva atómica en DB (LibSQL / Turso)
+    const requestTarget = Array.isArray(selectedNumbers) && selectedNumbers.length > 0 ? selectedNumbers : count
     const reservation = await reserveTicketsAtomic(requestTarget, orderId, sessionId)
 
     if (!reservation.success) {
-      // Revertir orden si no se pudieron reservar los tickets
-      await db.execute({ sql: "DELETE FROM orders WHERE id = ?", args: [orderId] })
       return new Response(
         JSON.stringify({ error: reservation.error || "No se pudieron reservar los números." }),
         { status: 409, headers: { "Content-Type": "application/json" } }
       )
     }
 
+    // 2. Registrar orden pendiente
+    await db.execute({
+      sql: `INSERT INTO orders (id, buyer_name, buyer_email, buyer_dni, buyer_phone, ticket_count, total_amount, status, payment_method, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 'mercadopago', ?)`,
+      args: [
+        orderId,
+        nameStr,
+        emailStr,
+        dniStr,
+        phoneStr,
+        count,
+        expectedAmount,
+        now,
+      ],
+    })
+
     const url = new URL(request.url)
     const baseUrl = `${url.protocol}//${url.host}`
 
-    // 3. Si el método de pago es Mercado Pago -> Crear Preferencia oficial
-    if (paymentMethod === "mercadopago" || !paymentMethod) {
-      const mpRes = await createMPPreference({
-        orderId,
-        ticketCount: count,
-        unitPrice: raffle.ticketBasePrice,
-        totalAmount: expectedAmount,
-        buyerName: String(buyer.name),
-        buyerEmail: String(buyer.email),
-        buyerDni: String(buyer.dni),
-        buyerPhone: String(buyer.phone),
-        baseUrl,
-      })
+    // 3. Crear Preferencia oficial de Mercado Pago (100% de los pagos)
+    const mpRes = await createMPPreference({
+      orderId,
+      ticketCount: count,
+      unitPrice: raffle.ticketBasePrice,
+      totalAmount: expectedAmount,
+      buyerName: nameStr,
+      buyerEmail: emailStr,
+      buyerDni: dniStr,
+      buyerPhone: phoneStr,
+      baseUrl,
+    })
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          orderId,
-          tickets: reservation.numbers,
-          amount: expectedAmount,
-          initPoint: mpRes.initPoint,
-          isDemo: mpRes.isDemo,
-          reservedUntil: now + 15 * 60 * 1000,
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      )
-    }
-
-    // 4. Si es Transferencia Bancaria -> Retornar datos bancarios para depósito
     return new Response(
       JSON.stringify({
         success: true,
         orderId,
         tickets: reservation.numbers,
         amount: expectedAmount,
-        paymentMethod: "transferencia",
-        bankInfo: {
-          bank: "Banco Galicia",
-          cbu: "0070123420000012345678",
-          alias: "VALDIVIA.SORTEO.MP",
-          cuit: "30-71234567-8",
-          holder: "Valdivia Automotores S.A.",
-        },
+        initPoint: mpRes.initPoint,
+        isDemo: mpRes.isDemo,
         reservedUntil: now + 15 * 60 * 1000,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
