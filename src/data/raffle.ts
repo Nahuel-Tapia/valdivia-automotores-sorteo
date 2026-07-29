@@ -18,7 +18,7 @@ export const raffle = {
   prizeYear: 2025,
   drawDate: "2025-12-20T21:00:00-03:00",
   drawChannel: "Canales Oficiales Valdivia Automotores",
-  ticketBasePrice: 200000,
+  ticketBasePrice: 20,
   currency: "ARS",
   soldPercentage: 68,
   totalNumbers: 200,
