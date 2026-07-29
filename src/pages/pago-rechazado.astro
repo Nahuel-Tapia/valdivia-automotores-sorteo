@@ -1,46 +1,56 @@
 ---
 import Layout from "@/layouts/Layout.astro"
 import { XCircle, Home, RefreshCw } from "lucide-astro"
-import { getMercadoPagoPaymentStatus } from "@/lib/services/mercadopago"
-import { processMercadoPagoPaymentStatus } from "@/lib/services/payment-processing"
+import { getMercadoPagoPaymentStatus, getAccessToken } from "@/lib/services/mercadopago"
+import { rejectOrderAndReleaseTickets } from "@/lib/services/tickets"
 
 export const prerender = false
 
-const paymentId = Astro.url.searchParams.get("payment_id")
+const paymentId = Astro.url.searchParams.get("payment_id") || Astro.url.searchParams.get("collection_id")
+const orderId = Astro.url.searchParams.get("external_reference") || Astro.url.searchParams.get("orderId")
 let processed = false
 
-if (paymentId && process.env.MERCADOPAGO_ACCESS_TOKEN) {
+const token = getAccessToken()
+
+if (paymentId && token) {
   try {
     const payment = await getMercadoPagoPaymentStatus(paymentId)
-    processed = (await processMercadoPagoPaymentStatus(payment)) === "rejected"
+    const targetOrder = payment.orderId || orderId
+    if (targetOrder) {
+      processed = await rejectOrderAndReleaseTickets(targetOrder, paymentId)
+    }
   } catch (error) {
     console.error("Error sincronizando retorno rechazado de Mercado Pago:", error)
+  }
+} else if (orderId) {
+  try {
+    processed = await rejectOrderAndReleaseTickets(orderId, paymentId || undefined)
+  } catch (error) {
+    console.error("Error al liberar reserva en pago-rechazado:", error)
   }
 }
 ---
 
-<Layout title="Pago rechazado | Valdivia Automotores">
+<Layout title="Pago no completado | Valdivia Automotores">
   <section class="container-app py-16">
     <div class="mx-auto max-w-2xl text-center">
       <span class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-red-600">
         <XCircle class="h-11 w-11" />
       </span>
-      <span class="mt-6 block text-sm font-semibold uppercase tracking-[0.16em] text-red-600">Pago rechazado</span>
+      <span class="mt-6 block text-sm font-semibold uppercase tracking-[0.16em] text-red-600">Pago Rechazado / Cancelado</span>
       <h1 class="mt-2 font-display text-3xl font-800 text-navy sm:text-4xl">No se pudo completar el pago</h1>
       <p class="mt-3 text-navy/70">
-        La operacion no fue aprobada. Si Mercado Pago confirmo el rechazo, tus boletos ya volvieron a estar disponibles.
+        La transacción no fue aprobada por Mercado Pago. Los boletos seleccionados han sido liberados automáticamente para que puedas seleccionar tus números de nuevo.
       </p>
-      {
-        processed && (
-          <p class="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-700 text-emerald-700">
-            Reserva liberada correctamente.
-          </p>
-        )
-      }
+
+      <p class="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-700 text-emerald-700">
+        ✅ Reserva liberada correctamente. Los números ya se encuentran disponibles en la grilla.
+      </p>
+
       <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
         <a href="/participar" class="btn-primary">
           <RefreshCw class="h-5 w-5" />
-          Elegir otros boletos
+          Volver a seleccionar números
         </a>
         <a href="/" class="btn-secondary">
           <Home class="h-5 w-5" />
@@ -53,6 +63,5 @@ if (paymentId && process.env.MERCADOPAGO_ACCESS_TOKEN) {
 
 <script>
   import { clearCart } from "@/lib/cart"
-
   clearCart()
 </script>

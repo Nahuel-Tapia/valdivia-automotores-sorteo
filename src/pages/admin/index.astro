@@ -422,11 +422,6 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
             <button data-order="${o.id}" class="btn-view-detail rounded-lg bg-navy/10 px-2.5 py-1 text-xs font-700 text-navy hover:bg-navy hover:text-white transition">
               Ver Detalle
             </button>
-            ${
-              o.status === "pending"
-                ? `<button data-order="${o.id}" class="btn-approve-order ml-1 rounded-lg bg-brand px-2.5 py-1 text-xs font-700 text-white hover:bg-brand-dark">Aprobar</button>`
-                : ""
-            }
           </td>
         </tr>
       `
@@ -438,15 +433,6 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         el.addEventListener("click", () => {
           const orderId = (el as HTMLElement).dataset.order
           if (orderId) openOrderDetailModal(orderId)
-        })
-      })
-
-      // Handlers de Aprobación
-      tbody.querySelectorAll(".btn-approve-order").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation()
-          const orderId = (btn as HTMLElement).dataset.order
-          if (orderId) approveOrder(orderId)
         })
       })
     }
@@ -508,49 +494,8 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
             .join("")
         }
 
-        // Botón Aprobar en modal
-        const approveContainer = document.getElementById("modal-action-approve-container")!
-        if (o.status === "pending") {
-          approveContainer.innerHTML = `
-            <button type="button" class="btn-modal-approve btn-primary text-xs py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-700">
-              Aprobar Pago Ahora
-            </button>
-          `
-          approveContainer.querySelector(".btn-modal-approve")?.addEventListener("click", () => {
-            approveOrder(orderId)
-          })
-        } else {
-          approveContainer.innerHTML = ""
-        }
       } catch (err) {
         console.error("Error abriendo modal:", err)
-      }
-    }
-
-    async function approveOrder(orderId: string) {
-      const currentToken = localStorage.getItem("valdivia_admin_token")
-      if (!confirm(`¿Confirmás la aprobación manual del pago de la orden #${orderId}?`)) return
-
-      try {
-        const res = await fetch("/api/admin/approve-order", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${currentToken}`,
-          },
-          body: JSON.stringify({ orderId }),
-        })
-        const data = await res.json()
-        if (data.success) {
-          alert("✅ Orden aprobada exitosamente y comprobante enviado por email.")
-          orderModal?.classList.add("hidden")
-          orderModal?.classList.remove("flex")
-          showDashboard()
-        } else {
-          alert(data.error || "No se pudo aprobar la orden")
-        }
-      } catch {
-        alert("Error de red al aprobar la orden.")
       }
     }
   }
