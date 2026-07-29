@@ -14,11 +14,11 @@ export interface CarColor {
 export const raffle = {
   brand: "Valdivia Automotores",
   title: "Gran Sorteo BYD Dolphin Mini 0km",
-  prizeName: "BYD Dolphin Mini",
+  prizeName: "BYD Dolphin Mini GL",
   prizeYear: 2025,
   drawDate: "2025-12-20T21:00:00-03:00",
-  drawChannel: "Lotería Nacional",
-  ticketBasePrice: 30,
+  drawChannel: "Canales Oficiales Valdivia Automotores",
+  ticketBasePrice: 200000,
   currency: "ARS",
   soldPercentage: 68,
   totalNumbers: 200,
@@ -28,7 +28,7 @@ export const raffle = {
     { label: "Motor", value: "Eléctrico 87cv" },
     { label: "Autonomía", value: "Hasta 380km" },
     { label: "Carga Rápida", value: "30 min (30-80%)" },
-    { label: "Patentamiento", value: "Incluido" },
+    { label: "Versión", value: "GL 0 km" },
   ] as PrizeSpec[],
   carColors: [
     { id: "green", name: "Verde Lima", hex: "#C8D626", image: "/cars/dolphin-green.png", video: "/videos/360_verde.mp4" },

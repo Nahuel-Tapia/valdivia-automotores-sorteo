@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro"
 import { raffle } from "@/data/raffle"
 import { db, initDB } from "@/lib/db"
-import { reserveTicketsAtomic } from "@/lib/services/tickets"
+import { createOrderWithTicketsAtomic } from "@/lib/services/tickets"
 import { createMPPreference } from "@/lib/services/mercadopago"
 
 export const prerender = false
@@ -57,11 +57,20 @@ export const POST: APIRoute = async ({ request }) => {
 
     const expectedAmount = count * raffle.ticketBasePrice
     const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`
-    const now = Date.now()
-
-    // 1. Reserva atómica en DB (LibSQL / Turso)
     const requestTarget = Array.isArray(selectedNumbers) && selectedNumbers.length > 0 ? selectedNumbers : count
-    const reservation = await reserveTicketsAtomic(requestTarget, orderId, sessionId)
+
+    // Creación atómica de orden + reserva de tickets en la misma transacción en DB
+    const reservation = await createOrderWithTicketsAtomic({
+      orderId,
+      buyerName: nameStr,
+      buyerEmail: emailStr,
+      buyerDni: dniStr,
+      buyerPhone: phoneStr,
+      ticketCount: count,
+      totalAmount: expectedAmount,
+      requestTarget,
+      sessionId,
+    })
 
     if (!reservation.success) {
       return new Response(
@@ -70,26 +79,10 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
-    // 2. Registrar orden pendiente
-    await db.execute({
-      sql: `INSERT INTO orders (id, buyer_name, buyer_email, buyer_dni, buyer_phone, ticket_count, total_amount, status, payment_method, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 'mercadopago', ?)`,
-      args: [
-        orderId,
-        nameStr,
-        emailStr,
-        dniStr,
-        phoneStr,
-        count,
-        expectedAmount,
-        now,
-      ],
-    })
-
     const url = new URL(request.url)
     const baseUrl = `${url.protocol}//${url.host}`
 
-    // 3. Crear Preferencia oficial de Mercado Pago (100% de los pagos)
+    // Crear Preferencia oficial de Mercado Pago
     const mpRes = await createMPPreference({
       orderId,
       ticketCount: count,
@@ -110,7 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
         amount: expectedAmount,
         initPoint: mpRes.initPoint,
         isDemo: mpRes.isDemo,
-        reservedUntil: now + 15 * 60 * 1000,
+        reservedUntil: reservation.reservedUntil,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     )

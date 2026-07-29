@@ -148,6 +148,87 @@ export async function toggleSeatLock(
   return { success: true, action: "locked", reservedUntil }
 }
 
+/** Creación atómica de orden y reserva de boletos en una única transacción en DB */
+export async function createOrderWithTicketsAtomic(params: {
+  orderId: string
+  buyerName: string
+  buyerEmail: string
+  buyerDni: string
+  buyerPhone: string
+  ticketCount: number
+  totalAmount: number
+  requestTarget: string[] | number
+  sessionId?: string
+}): Promise<{ success: boolean; numbers: string[]; reservedUntil?: number; error?: string }> {
+  await initDB()
+  await cleanupExpiredReservations()
+
+  const now = Date.now()
+  const reservedUntil = now + RESERVATION_MINUTES * 60 * 1000
+  let targetNumbers: string[] = []
+
+  if (Array.isArray(params.requestTarget)) {
+    targetNumbers = params.requestTarget
+  } else {
+    const res = await db.execute({
+      sql: "SELECT number FROM tickets WHERE status = 'available' ORDER BY RANDOM() LIMIT ?",
+      args: [params.requestTarget],
+    })
+
+    if (res.rows.length < params.requestTarget) {
+      return { success: false, numbers: [], error: "No hay suficientes números disponibles." }
+    }
+
+    targetNumbers = res.rows.map((r) => String(r.number))
+  }
+
+  // Verificar disponibilidad o propiedad de sesión
+  const placeholders = targetNumbers.map(() => "?").join(",")
+  const sqlCheck = params.sessionId
+    ? `SELECT number FROM tickets WHERE number IN (${placeholders}) AND (status = 'available' OR session_id = ? OR reserved_until < ?)`
+    : `SELECT number FROM tickets WHERE number IN (${placeholders}) AND (status = 'available' OR reserved_until < ?)`
+  const argsCheck = params.sessionId ? [...targetNumbers, params.sessionId, now] : [...targetNumbers, now]
+
+  const checkRes = await db.execute({
+    sql: sqlCheck,
+    args: argsCheck,
+  })
+
+  if (checkRes.rows.length !== targetNumbers.length) {
+    return {
+      success: false,
+      numbers: [],
+      error: "Uno o más de los números seleccionados ya fueron reservados por otro comprador.",
+    }
+  }
+
+  // Transacción atómica: INSERT orden + UPDATE tickets vinculados
+  const statements = [
+    {
+      sql: `INSERT INTO orders (id, buyer_name, buyer_email, buyer_dni, buyer_phone, ticket_count, total_amount, status, payment_method, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 'mercadopago', ?)`,
+      args: [
+        params.orderId,
+        params.buyerName,
+        params.buyerEmail,
+        params.buyerDni,
+        params.buyerPhone,
+        params.ticketCount,
+        params.totalAmount,
+        now,
+      ],
+    },
+    ...targetNumbers.map((num) => ({
+      sql: "UPDATE tickets SET status = 'reserved', order_id = ?, reserved_until = ?, updated_at = ? WHERE number = ?",
+      args: [params.orderId, reservedUntil, now, num],
+    })),
+  ]
+
+  await db.batch(statements, "write")
+
+  return { success: true, numbers: targetNumbers, reservedUntil }
+}
+
 /** Reserva en lote atómica para el checkout final */
 export async function reserveTicketsAtomic(
   request: string[] | number,
@@ -218,23 +299,23 @@ export async function approveOrderAndTickets(orderId: string, mpPaymentId?: stri
 
   if (orderCheck.rows.length === 0) return false
   const orderData = orderCheck.rows[0]
-  const orderStatus = String(orderData.status)
 
-  if (orderStatus === "approved") return true
-  if (orderStatus !== "pending") return false
+  // Actualización atómica de orden y boletos vinculados
+  await db.batch(
+    [
+      {
+        sql: "UPDATE orders SET status = 'approved', mp_payment_id = ? WHERE id = ?",
+        args: [mpPaymentId || "MP-DIRECT", orderId],
+      },
+      {
+        sql: "UPDATE tickets SET status = 'paid', reserved_until = NULL, updated_at = ? WHERE order_id = ?",
+        args: [now, orderId],
+      },
+    ],
+    "write"
+  )
 
-  // 1. Actualizar orden a 'approved'
-  await db.execute({
-    sql: "UPDATE orders SET status = 'approved', mp_payment_id = ? WHERE id = ?",
-    args: [mpPaymentId ?? "SIMULATED_PAYMENT", orderId],
-  })
-
-  // 2. Marcar todos los boletos vinculados a esta orden como 'paid'
-  await db.execute({
-    sql: "UPDATE tickets SET status = 'paid', reserved_until = NULL, session_id = NULL, updated_at = ? WHERE order_id = ?",
-    args: [now, orderId],
-  })
-
+  // Obtener números de boletos pagados para enviar el email
   const ticketsRes = await db.execute({
     sql: "SELECT number FROM tickets WHERE order_id = ? ORDER BY number ASC",
     args: [orderId],
@@ -242,67 +323,50 @@ export async function approveOrderAndTickets(orderId: string, mpPaymentId?: stri
 
   const tickets = ticketsRes.rows.map((r) => String(r.number))
 
-  sendOrderConfirmationEmail({
+  // Enviar email de confirmación
+  await sendOrderConfirmationEmail({
     orderId,
     buyerName: String(orderData.buyer_name),
     buyerEmail: String(orderData.buyer_email),
     tickets,
     totalAmount: Number(orderData.total_amount),
-  }).catch((err) => console.error("Error asíncrono enviando email:", err))
+  })
 
   return true
 }
 
-/** Rechazar el pago de una orden y liberar inmediatamente sus tickets reservados */
-export async function rejectOrderAndReleaseTickets(
-  orderId: string,
-  mpPaymentId?: string,
-  options: { notifyBuyer?: boolean } = {}
-): Promise<boolean> {
+/** Rechazar orden y liberar números */
+export async function rejectOrderAndReleaseTickets(orderId: string, mpPaymentId?: string): Promise<boolean> {
   await initDB()
   const now = Date.now()
 
   const orderCheck = await db.execute({
-    sql: "SELECT buyer_name, buyer_email, total_amount, status FROM orders WHERE id = ?",
+    sql: "SELECT buyer_name, buyer_email FROM orders WHERE id = ?",
     args: [orderId],
   })
 
   if (orderCheck.rows.length === 0) return false
-
   const orderData = orderCheck.rows[0]
-  if (String(orderData.status) === "approved") {
-    return false
-  }
 
-  const ticketsRes = await db.execute({
-    sql: "SELECT number FROM tickets WHERE order_id = ? AND status = 'reserved' ORDER BY number ASC",
-    args: [orderId],
+  await db.batch(
+    [
+      {
+        sql: "UPDATE orders SET status = 'rejected', mp_payment_id = ? WHERE id = ?",
+        args: [mpPaymentId || "MP-REJECTED", orderId],
+      },
+      {
+        sql: "UPDATE tickets SET status = 'available', order_id = NULL, session_id = NULL, reserved_until = NULL, updated_at = ? WHERE order_id = ?",
+        args: [now, orderId],
+      },
+    ],
+    "write"
+  )
+
+  await sendPaymentRejectedEmail({
+    buyerName: String(orderData.buyer_name),
+    buyerEmail: String(orderData.buyer_email),
+    orderId,
   })
-  const tickets = ticketsRes.rows.map((r) => String(r.number))
-
-  const orderRes = await db.execute({
-    sql: "UPDATE orders SET status = 'rejected', mp_payment_id = ? WHERE id = ? AND status != 'approved'",
-    args: [mpPaymentId ?? "PAYMENT_REJECTED", orderId],
-  })
-
-  if (orderRes.rowsAffected === 0) return false
-
-  await db.execute({
-    sql: `UPDATE tickets
-          SET status = 'available', order_id = NULL, session_id = NULL, reserved_until = NULL, updated_at = ?
-          WHERE order_id = ? AND status = 'reserved'`,
-    args: [now, orderId],
-  })
-
-  if (tickets.length > 0 && options.notifyBuyer !== false) {
-    sendPaymentRejectedEmail({
-      orderId,
-      buyerName: String(orderData.buyer_name),
-      buyerEmail: String(orderData.buyer_email),
-      tickets,
-      totalAmount: Number(orderData.total_amount),
-    }).catch((err) => console.error("Error asincrono enviando email de rechazo:", err))
-  }
 
   return true
 }
