@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head><title>Debug Frame Analysis</title></head>
+<body style="background:#111;color:#fff;font-family:monospace;padding:20px;">
+<h2>Video Frame Pixel Analyzer</h2>
+<p>This extracts a frame from each video and analyzes pixel colors to understand the checkerboard pattern.</p>
+<canvas id="c" style="border:1px solid red;max-width:100%;"></canvas>
+<div id="log" style="white-space:pre-wrap;margin-top:20px;font-size:12px;"></div>
+<script>
+async function analyze(videoSrc) {
+  const log = document.getElementById('log');
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  
+  const video = document.createElement('video');
+  video.src = videoSrc;
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = 'auto';
+  
+  await new Promise(r => video.onloadedmetadata = r);
+  
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  
+  // Seek to first frame
+  video.currentTime = 0.1;
+  await new Promise(r => video.onseeked = r);
+  
+  ctx.drawImage(video, 0, 0);
+  
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  log.textContent += `\n=== ${videoSrc} ===\n`;
+  log.textContent += `Video: ${w}x${h}\n\n`;
+  
+  // Sample corners and edges (definite background areas)
+  const samplePoints = [
+    {label: "Top-Left (0,0)", x: 0, y: 0},
+    {label: "Top-Left (5,5)", x: 5, y: 5},
+    {label: "Top-Left (10,10)", x: 10, y: 10},
+    {label: "Top-Left (15,15)", x: 15, y: 15},
+    {label: "Top-Left (20,20)", x: 20, y: 20},
+    {label: "Top-Right (w-5,5)", x: w-5, y: 5},
+    {label: "Top-Right (w-10,10)", x: w-10, y: 10},
+    {label: "Bottom-Left (5,h-5)", x: 5, y: h-5},
+    {label: "Bottom-Left (10,h-10)", x: 10, y: h-10},
+    {label: "Bottom-Right (w-5,h-5)", x: w-5, y: h-5},
+    {label: "Bottom-Center (w/2,h-5)", x: Math.floor(w/2), y: h-5},
+    {label: "Bottom-Center (w/2,h-20)", x: Math.floor(w/2), y: h-20},
+    {label: "Center-Top (w/2,20)", x: Math.floor(w/2), y: 20},
+    {label: "Left-Mid (5,h/2)", x: 5, y: Math.floor(h/2)},
+    {label: "Right-Mid (w-5,h/2)", x: w-5, y: Math.floor(h/2)},
+  ];
+  
+  log.textContent += "Corner/Edge Samples (background areas):\n";
+  for (const p of samplePoints) {
+    const idx = (p.y * w + p.x) * 4;
+    log.textContent += `  ${p.label}: R=${data[idx]} G=${data[idx+1]} B=${data[idx+2]} A=${data[idx+3]}\n`;
+  }
+  
+  // Find the checkerboard tile size by scanning top row for color changes
+  log.textContent += "\nTop row pixel scan (y=0, first 60 pixels):\n  ";
+  let prevR = data[0];
+  let transitions = [];
+  for (let x = 0; x < Math.min(60, w); x++) {
+    const idx = (0 * w + x) * 4;
+    const r = data[idx];
+    if (Math.abs(r - prevR) > 5) {
+      transitions.push(x);
+    }
+    prevR = r;
+    log.textContent += `${r},`;
+  }
+  log.textContent += `\n  Transitions at x: ${transitions.join(', ')}\n`;
+  
+  // Histogram of all unique gray values in corners
+  log.textContent += "\nHistogram of pixel values in top-left 100x100:\n";
+  const hist = {};
+  for (let y = 0; y < 100; y++) {
+    for (let x = 0; x < 100; x++) {
+      const idx = (y * w + x) * 4;
+      const r = data[idx], g = data[idx+1], b = data[idx+2];
+      const key = `${r},${g},${b}`;
+      hist[key] = (hist[key] || 0) + 1;
+    }
+  }
+  const sorted = Object.entries(hist).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  for (const [k, v] of sorted) {
+    log.textContent += `  RGB(${k}): ${v} pixels\n`;
+  }
+  
+  // Also sample the floor area (below car, center-bottom)
+  log.textContent += "\nFloor area scan (y=h-50 to h-1, center column x=w/2):\n";
+  for (let y = h - 50; y < h; y += 5) {
+    const idx = (y * Math.floor(w/2) + Math.floor(w/2)) * 4;
+    // Fix: proper index
+    const idx2 = (y * w + Math.floor(w/2)) * 4;
+    log.textContent += `  y=${y}: R=${data[idx2]} G=${data[idx2+1]} B=${data[idx2+2]}\n`;
+  }
+}
+
+(async () => {
+  await analyze('/videos/360_perla.mp4');
+  await analyze('/videos/360_verde.mp4');
+})();
+</script>
+</body>
+</html>
