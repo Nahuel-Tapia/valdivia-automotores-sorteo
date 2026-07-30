@@ -22,7 +22,7 @@ export const raffle = {
   currency: "ARS",
   soldPercentage: 68,
   totalNumbers: 200,
-  heroImage: "/cars/dolphin-green.png",
+  heroImage: "/Portada.png",
   interiorImage: "/premio-interior.png",
   prizeSpecs: [
     { label: "Motor", value: "Eléctrico 87cv" },
@@ -31,10 +31,10 @@ export const raffle = {
     { label: "Versión", value: "GL 0 km" },
   ] as PrizeSpec[],
   carColors: [
-    { id: "green", name: "Verde Lima", hex: "#C8D626", image: "/cars/dolphin-green.png", video: "/videos/360_verde.mp4" },
-    { id: "white", name: "Blanco Perla", hex: "#F5F0E8", image: "/cars/dolphin-white.png", video: "/videos/360_perla.mp4" },
-    { id: "black", name: "Negro Azabache", hex: "#1A1A1A", image: "/cars/dolphin-black.png", video: null },
-    { id: "blue", name: "Celeste Cielo", hex: "#A3C4E0", image: "/cars/dolphin-blue.png", video: null },
+    { id: "green", name: "Verde Lima", hex: "#C8D626", image: "/cars/portada-clean.png", video: "/videos/360_verde.mp4" },
+    { id: "white", name: "Blanco Perla", hex: "#F5F0E8", image: "/cars/dolphin-white.png", video: "/videos/360_blanco.mp4" },
+    { id: "black", name: "Negro Azabache", hex: "#1A1A1A", image: "/cars/dolphin-black.png", video: "/videos/360_negro.mp4" },
+    { id: "blue", name: "Celeste Cielo", hex: "#A3C4E0", image: "/cars/dolphin-blue.png", video: "/videos/360_celeste.mp4" },
   ] as CarColor[],
 }
 

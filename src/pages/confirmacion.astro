@@ -27,7 +27,7 @@ if (paymentId && token) {
     const payment = await getMercadoPagoPaymentStatus(paymentId)
     const targetOrder = payment.orderId || orderId
     if (targetOrder && (payment.status === "approved" || status === "approved")) {
-      const res = await approveOrderAndTickets(targetOrder, paymentId)
+      const res = await approveOrderAndTickets(targetOrder, paymentId, { ignoreExpiration: true })
       if (!res.success) {
         return Astro.redirect(`/pago-rechazado?orderId=${targetOrder}&reason=${res.expired ? "expired" : "failed"}`)
       }
@@ -40,7 +40,7 @@ if (paymentId && token) {
   }
 } else if (orderId && status === "approved") {
   try {
-    const res = await approveOrderAndTickets(orderId, paymentId || undefined)
+    const res = await approveOrderAndTickets(orderId, paymentId || undefined, { ignoreExpiration: true })
     if (!res.success) {
       return Astro.redirect(`/pago-rechazado?orderId=${orderId}&reason=${res.expired ? "expired" : "failed"}`)
     }

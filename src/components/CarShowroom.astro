@@ -16,7 +16,7 @@ const hotspots = carHotspots || [];
         <span class="text-xs font-bold text-navy uppercase tracking-widest">🔄 Visor Interactivo 360°</span>
       </div>
       <h2 class="text-4xl md:text-5xl font-display font-extrabold text-navy mb-3 tracking-tight">
-        Girá tu <span class="text-brand">BYD Dolphin Mini</span>
+        Conocé el <span class="text-brand">BYD Dolphin Mini</span>
       </h2>
       <p class="text-base sm:text-lg text-navy/70 font-sans max-w-xl mx-auto leading-relaxed">
         Arrastrá horizontalmente para hacer girar el vehículo en 360°.
@@ -198,9 +198,7 @@ const hotspots = carHotspots || [];
     const LERP_FACTOR = 0.2;
     const DRAG_SENSITIVITY = 5; // pixels per frame step
 
-    // ─── Background color to paint over checkerboard ───
-    const BG_TOP = { r: 234, g: 236, b: 239 };    // #EAECEF
-    const BG_BOTTOM = { r: 203, g: 206, b: 211 };  // #CBCED3
+
 
     const framesMap: Record<string, ImageBitmap[]> = {};
     const loadingPromises: Record<string, Promise<void>> = {};
@@ -251,91 +249,10 @@ const hotspots = carHotspots || [];
     }
     requestAnimationFrame(animate);
 
-    // ─── BACKGROUND REPLACEMENT ───
-    function replaceBackgroundWithGradient(offCtx: CanvasRenderingContext2D, width: number, height: number) {
-      const imgData = offCtx.getImageData(0, 0, width, height);
-      const data = imgData.data;
-      const totalPixels = width * height;
 
-      const isExterior = new Uint8Array(totalPixels);
-      const queue = new Int32Array(totalPixels);
-      let qHead = 0;
-      let qTail = 0;
-
-      function isBgLike(pixelIdx: number): boolean {
-        const i = pixelIdx * 4;
-        const r = data[i], g = data[i + 1], b = data[i + 2];
-        const maxC = Math.max(r, g, b);
-        const minC = Math.min(r, g, b);
-        const chroma = maxC - minC;
-        return chroma <= 12 && maxC >= 120;
-      }
-
-      for (let x = 0; x < width; x++) {
-        const topIdx = x;
-        if (isBgLike(topIdx)) {
-          isExterior[topIdx] = 1;
-          queue[qTail++] = topIdx;
-        }
-        const btmIdx = (height - 1) * width + x;
-        if (isBgLike(btmIdx)) {
-          isExterior[btmIdx] = 1;
-          queue[qTail++] = btmIdx;
-        }
-      }
-      for (let y = 1; y < height - 1; y++) {
-        const leftIdx = y * width;
-        if (!isExterior[leftIdx] && isBgLike(leftIdx)) {
-          isExterior[leftIdx] = 1;
-          queue[qTail++] = leftIdx;
-        }
-        const rightIdx = y * width + (width - 1);
-        if (!isExterior[rightIdx] && isBgLike(rightIdx)) {
-          isExterior[rightIdx] = 1;
-          queue[qTail++] = rightIdx;
-        }
-      }
-
-      while (qHead < qTail) {
-        const curr = queue[qHead++];
-        const cx = curr % width;
-        const cy = (curr - cx) / width;
-
-        if (cx > 0 && !isExterior[curr - 1] && isBgLike(curr - 1)) {
-          isExterior[curr - 1] = 1;
-          queue[qTail++] = curr - 1;
-        }
-        if (cx < width - 1 && !isExterior[curr + 1] && isBgLike(curr + 1)) {
-          isExterior[curr + 1] = 1;
-          queue[qTail++] = curr + 1;
-        }
-        if (cy > 0 && !isExterior[curr - width] && isBgLike(curr - width)) {
-          isExterior[curr - width] = 1;
-          queue[qTail++] = curr - width;
-        }
-        if (cy < height - 1 && !isExterior[curr + width] && isBgLike(curr + width)) {
-          isExterior[curr + width] = 1;
-          queue[qTail++] = curr + width;
-        }
-      }
-
-      for (let i = 0; i < totalPixels; i++) {
-        if (isExterior[i]) {
-          const y = (i / width) | 0;
-          const t = y / height;
-          const idx = i * 4;
-          data[idx]     = BG_TOP.r + (BG_BOTTOM.r - BG_TOP.r) * t | 0;
-          data[idx + 1] = BG_TOP.g + (BG_BOTTOM.g - BG_TOP.g) * t | 0;
-          data[idx + 2] = BG_TOP.b + (BG_BOTTOM.b - BG_TOP.b) * t | 0;
-          data[idx + 3] = 255;
-        }
-      }
-
-      offCtx.putImageData(imgData, 0, 0);
-    }
 
     // ─── INDEXEDDB BLOB CACHE FOR <15ms REPEAT LOADS ───
-    const DB_NAME = 'valdivia_360_cache_v2';
+    const DB_NAME = 'valdivia_360_cache_v4';
     const STORE_NAME = 'frames';
 
     function openIDB(): Promise<IDBDatabase> {
@@ -470,7 +387,8 @@ const hotspots = carHotspots || [];
         const rawW = tempVideo.videoWidth || 1280;
         const rawH = tempVideo.videoHeight || 720;
 
-        const scaleFactor = Math.min(1, 800 / rawW);
+        // Use higher resolution for better quality (max 1920px width)
+        const scaleFactor = Math.min(1, 1920 / rawW);
         const vw = Math.round(rawW * scaleFactor);
         const vh = Math.round(rawH * scaleFactor);
 
@@ -486,7 +404,6 @@ const hotspots = carHotspots || [];
         await seekVideoFrame(tempVideo, 0);
         offCtx.clearRect(0, 0, vw, vh);
         offCtx.drawImage(tempVideo, 0, 0, vw, vh);
-        replaceBackgroundWithGradient(offCtx, vw, vh);
 
         const frame0Canvas = document.createElement('canvas');
         frame0Canvas.width = vw;
@@ -513,7 +430,6 @@ const hotspots = carHotspots || [];
 
           offCtx.clearRect(0, 0, vw, vh);
           offCtx.drawImage(tempVideo, 0, 0, vw, vh);
-          replaceBackgroundWithGradient(offCtx, vw, vh);
 
           const frameCanvas = document.createElement('canvas');
           frameCanvas.width = vw;

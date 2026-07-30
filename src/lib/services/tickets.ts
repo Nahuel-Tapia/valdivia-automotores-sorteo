@@ -298,38 +298,60 @@ export async function approveOrderAndTickets(
   const MAX_RESERVATION_MS = 10 * 60 * 1000 // 10 minutos
 
   const orderCheck = await db.execute({
-    sql: "SELECT buyer_name, buyer_email, total_amount, status, created_at FROM orders WHERE id = ?",
+    sql: "SELECT buyer_name, buyer_email, total_amount, ticket_count, status, created_at FROM orders WHERE id = ?",
     args: [orderId],
   })
-
+  
   if (orderCheck.rows.length === 0) return { success: false, reason: "Orden no encontrada." }
   const orderData = orderCheck.rows[0]
-
-  // Si ya fue aprobada previamente
+  
   if (String(orderData.status) === "approved") {
     return { success: true }
   }
-
-  // 1. Control estricto de expiración de 10 minutos
+  
   const createdAt = Number(orderData.created_at) || 0
   const elapsedMs = now - createdAt
-
+  
+  // Si la pasarela de pagos nos dice explícitamente que pagó, NUNCA expiramos la orden por tiempo.
   if (!options?.ignoreExpiration && elapsedMs > MAX_RESERVATION_MS) {
     console.warn(`⏳ Orden #${orderId} excedió el tiempo límite de compra (${Math.round(elapsedMs / 60000)} min). Rechazando...`)
     await rejectOrderAndReleaseTickets(orderId, mpPaymentId || "EXPIRED_TIME_LIMIT")
     return { success: false, expired: true, reason: "Tiempo límite de compra (10 minutos) excedido." }
   }
 
-  // 2. Verificar que los tickets asociados aún pertenezcan a esta orden y estén reservados
-  const ticketsRes = await db.execute({
+  // Verificar si la orden todavía tiene los boletos asignados
+  let ticketsRes = await db.execute({
     sql: "SELECT number FROM tickets WHERE order_id = ?",
     args: [orderId],
   })
 
+  // Si los boletos ya fueron liberados (porque pasaron los 10 mins de cleanup) pero el pago fue EXITOSO
   if (ticketsRes.rows.length === 0) {
-    console.warn(`⏳ La orden #${orderId} no tiene boletos reservados vinculados (expiraron o fueron liberados).`)
-    await rejectOrderAndReleaseTickets(orderId, mpPaymentId || "EXPIRED_NO_TICKETS")
-    return { success: false, expired: true, reason: "Los boletos reservados han expirado y fueron liberados." }
+    console.warn(`⚠️ Orden #${orderId} aprobada tardíamente. Boletos originales liberados. Reasignando nuevos boletos disponibles...`)
+    const originalCount = Number(orderData.ticket_count)
+    if (originalCount > 0) {
+      // Intentar reasignar boletos aleatorios disponibles
+      const newTickets = await db.execute({
+        sql: "SELECT number FROM tickets WHERE status = 'available' ORDER BY RANDOM() LIMIT ?",
+        args: [originalCount],
+      })
+      if (newTickets.rows.length === originalCount) {
+        const statements = newTickets.rows.map(t => ({
+          sql: "UPDATE tickets SET status = 'reserved', order_id = ?, reserved_until = ?, updated_at = ? WHERE number = ?",
+          args: [orderId, now + 60000, now, String(t.number)]
+        }))
+        await db.batch(statements, "write")
+        // Refetch tickets vinculados
+        ticketsRes = await db.execute({
+          sql: "SELECT number FROM tickets WHERE order_id = ?",
+          args: [orderId],
+        })
+      } else {
+        // No hay suficientes boletos disponibles, pero el usuario PAGÓ.
+        // Aprobamos la orden igual para que el administrador la vea, y no se pierde el dinero.
+        console.error(`🚨 ALERTA: Orden #${orderId} pagada pero NO hay boletos suficientes para reasignar.`)
+      }
+    }
   }
 
   // Actualización atómica de orden y boletos vinculados

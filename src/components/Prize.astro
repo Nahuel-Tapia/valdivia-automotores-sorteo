@@ -37,15 +37,22 @@ const icons = [Zap, Battery, Gauge, ShieldCheck]
     </div>
 
     <div class="order-1 lg:order-2">
-      <img
-        src="/cars/dolphin-blue.png"
-        alt={`${raffle.prizeName} vista lateral`}
-        width="720"
-        height="520"
-        class="w-full rounded-3xl border border-navy/10 object-contain shadow-card"
-        loading="lazy"
-        decoding="async"
-      />
+      <div class="relative overflow-hidden rounded-3xl border border-navy/15 bg-gradient-to-b from-navy/10 via-navy/5 to-transparent p-6 sm:p-8 shadow-card backdrop-blur-md flex items-center justify-center group">
+        <!-- Ambient radial glow behind car -->
+        <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(31,143,214,0.15)_0%,transparent_75%)]"></div>
+        <!-- Studio floor reflection line -->
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-10 bg-brand/20 rounded-[100%] blur-xl pointer-events-none"></div>
+        
+        <img
+          src="/cars/portada-clean.png"
+          alt={`${raffle.prizeName} 0km`}
+          width="720"
+          height="520"
+          class="w-full h-auto max-h-[380px] object-contain drop-shadow-[0_20px_30px_rgba(31,42,82,0.35)] group-hover:scale-[1.03] transition-transform duration-500"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
     </div>
   </div>
 </section>
