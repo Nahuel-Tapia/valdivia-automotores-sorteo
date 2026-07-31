@@ -100,12 +100,12 @@ export async function initDB() {
     // 4. Seed de Admin por defecto si no existe ninguno
     const adminCheck = await db.execute("SELECT COUNT(*) as count FROM admins")
     if (Number(adminCheck.rows[0].count) === 0) {
-      const hash = await bcrypt.hash("admin123", 10)
+      const hash = await bcrypt.hash("lucasvaldivia", 10)
       await db.execute({
         sql: "INSERT INTO admins (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-        args: ["admin-1", "admin@valdivia.com", hash, Date.now()],
+        args: ["admin-1", "valdiviasorteo@admin.com", hash, Date.now()],
       })
-      console.log("✅ Admin por defecto creado: admin@valdivia.com / admin123")
+      console.log("✅ Admin por defecto creado: valdiviasorteo@admin.com / lucasvaldivia")
     }
 
     // 5. Seed de 200 Tickets si la tabla está vacía

@@ -37,12 +37,12 @@ async function resetDatabase() {
   // 3. Crear Admin por defecto si no existe
   const adminCheck = await db.execute("SELECT COUNT(*) as count FROM admins")
   if (Number(adminCheck.rows[0].count) === 0) {
-    const hash = await bcrypt.hash("admin123", 10)
+    const hash = await bcrypt.hash("lucasvaldivia", 10)
     await db.execute({
       sql: "INSERT INTO admins (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-      args: ["admin-1", "admin@valdivia.com", hash, Date.now()],
+      args: ["admin-1", "valdiviasorteo@admin.com", hash, Date.now()],
     })
-    console.log("👤 Admin creado: admin@valdivia.com / admin123")
+    console.log("👤 Admin creado: valdiviasorteo@admin.com / lucasvaldivia")
   }
 
   // 4. Verificar si faltan boletos para insertar (001 a 200)
