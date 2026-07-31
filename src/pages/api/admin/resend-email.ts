@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request }) => {
     const tickets = ticketsRes.rows.map((r) => String(r.number))
 
     // 3. Re-enviar el correo
-    const sent = await sendOrderConfirmationEmail({
+    const emailRes = await sendOrderConfirmationEmail({
       orderId,
       buyerName: String(orderData.buyer_name),
       buyerEmail: String(orderData.buyer_email),
@@ -56,9 +56,9 @@ export const POST: APIRoute = async ({ request }) => {
       totalAmount: Number(orderData.total_amount),
     })
 
-    if (!sent) {
+    if (!emailRes.success) {
       return new Response(
-        JSON.stringify({ error: "No se pudo enviar el correo electrónico." }),
+        JSON.stringify({ error: emailRes.error || "No se pudo enviar el correo electrónico." }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       )
     }

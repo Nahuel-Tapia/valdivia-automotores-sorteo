@@ -78,7 +78,12 @@ function formatAmount(value: number): string {
   }).format(value)
 }
 
-async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean> {
+export interface SendEmailResult {
+  success: boolean
+  error?: string
+}
+
+async function sendEmail({ to, subject, html }: SendEmailInput): Promise<SendEmailResult> {
   // 1. Priorizar Gmail si se configuraron credenciales
   const gmailConfig = getGmailConfig()
   if (gmailConfig) {
@@ -90,10 +95,17 @@ async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean
         html,
       })
       console.log(`[GMAIL SUCCESS] Enviado exitosamente a ${to} mediante Gmail SMTP`)
-      return true
-    } catch (error) {
+      return { success: true }
+    } catch (error: any) {
       console.error("[GMAIL ERROR] Error enviando correo mediante Gmail SMTP:", error)
-      return false
+      const msg = String(error?.message || error)
+      if (msg.includes("535") || msg.includes("Username and Password not accepted")) {
+        return {
+          success: false,
+          error: "Gmail rechazó las credenciales. Asegurate de usar una 'Contraseña de Aplicación' de 16 letras generada en Google y que la verificación en 2 pasos esté activa.",
+        }
+      }
+      return { success: false, error: `Error enviando por Gmail: ${msg}` }
     }
   }
 
@@ -101,8 +113,11 @@ async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean
   const { resend, from } = getResendConfig()
 
   if (!resend) {
-    console.log(`[MAIL DEMO] ${subject} -> ${to}`)
-    return true
+    console.log(`[MAIL DEMO] No hay proveedor configurado (Gmail o Resend API Key). ${subject} -> ${to}`)
+    return {
+      success: false,
+      error: "No se configuraron las variables GMAIL_USER / GMAIL_APP_PASSWORD ni RESEND_API_KEY en Vercel.",
+    }
   }
 
   try {
@@ -115,14 +130,21 @@ async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean
 
     if (res.error) {
       console.error("[MAIL ERROR] Error devuelto por Resend API:", res.error)
-      return false
+      const resendMsg = String(res.error.message || "")
+      if (resendMsg.includes("only send testing emails")) {
+        return {
+          success: false,
+          error: "Resend (modo prueba) solo permite enviar correos a tu propia casilla registrada. Para enviar a cualquier cliente, configurá GMAIL_USER y GMAIL_APP_PASSWORD en Vercel.",
+        }
+      }
+      return { success: false, error: `Error de Resend: ${resendMsg}` }
     }
 
     console.log(`[MAIL SUCCESS] Enviado exitosamente a ${to} (ID: ${res.data?.id})`)
-    return true
-  } catch (error) {
+    return { success: true }
+  } catch (error: any) {
     console.error("[MAIL EXCEPTION] Excepción enviando correo:", error)
-    return false
+    return { success: false, error: String(error?.message || error) }
   }
 }
 
@@ -220,7 +242,7 @@ function buildPaymentRejectedEmailHTML(details: EmailOrderDetails): string {
   )
 }
 
-export async function sendOrderConfirmationEmail(details: EmailOrderDetails): Promise<boolean> {
+export async function sendOrderConfirmationEmail(details: EmailOrderDetails): Promise<SendEmailResult> {
   return sendEmail({
     to: details.buyerEmail,
     subject: `Tus números para ${raffle.title} - Orden #${details.orderId}`,
@@ -228,7 +250,7 @@ export async function sendOrderConfirmationEmail(details: EmailOrderDetails): Pr
   })
 }
 
-export async function sendPaymentRejectedEmail(details: EmailOrderDetails): Promise<boolean> {
+export async function sendPaymentRejectedEmail(details: EmailOrderDetails): Promise<SendEmailResult> {
   return sendEmail({
     to: details.buyerEmail,
     subject: `Pago rechazado - Orden #${details.orderId}`,
