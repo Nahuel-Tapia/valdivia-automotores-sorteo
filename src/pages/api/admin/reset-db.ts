@@ -17,9 +17,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log("🧹 Reseteando base de datos por solicitud admin...")
 
-    // 1. Limpiar órdenes y restaurar los 200 boletos a estado disponible
-    await db.execute("DELETE FROM orders;")
+    // 1. Desvincular boletos primero (para evitar violaciones de clave foránea / Foreign Key constraint)
     await db.execute("UPDATE tickets SET status = 'available', order_id = NULL, session_id = NULL, reserved_until = NULL;")
+    // 2. Eliminar órdenes
+    await db.execute("DELETE FROM orders;")
 
     console.log("✨ Base de datos reseteada con éxito (200 boletos disponibles).")
 

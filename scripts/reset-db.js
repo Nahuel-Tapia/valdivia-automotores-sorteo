@@ -31,8 +31,8 @@ async function resetDatabase() {
 
   // 1. Limpiar órdenes y restaurar tickets a available
   console.log("🧹 Reseteando órdenes y liberando los 200 boletos...")
-  await db.execute("DELETE FROM orders;")
   await db.execute("UPDATE tickets SET status = 'available', order_id = NULL, session_id = NULL, reserved_until = NULL;")
+  await db.execute("DELETE FROM orders;")
 
   // 3. Crear Admin por defecto si no existe
   const adminCheck = await db.execute("SELECT COUNT(*) as count FROM admins")
