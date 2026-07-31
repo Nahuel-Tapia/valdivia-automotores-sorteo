@@ -65,7 +65,7 @@ export const carHotspots: Hotspot[] = [
     description: "Tecnología exclusiva BYD Blade Battery (LFP) con máxima seguridad y durabilidad.",
     specs: [
       { label: "Capacidad", value: "38.08 / 43.2 kWh" },
-      { label: "Autonomía", value: "280 - 380 km (NEDC)" },
+      { label: "Autonomía", value: "Hasta 280 km (NEDC)" },
       { label: "Carga DC", value: "Hasta 85 kW" },
       { label: "30→80%", value: "~30 minutos" },
     ],
