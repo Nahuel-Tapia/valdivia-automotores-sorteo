@@ -1,26 +1,39 @@
 import { Resend } from "resend"
+import nodemailer from "nodemailer"
 import { raffle } from "@/data/raffle"
 
+function getEnvVar(key: string): string | undefined {
+  try {
+    const metaVal = (import.meta as any).env?.[key]
+    if (metaVal) return String(metaVal)
+  } catch { /* ignorar */ }
+
+  if (typeof process !== "undefined" && process.env?.[key]) {
+    return process.env[key]
+  }
+  return undefined
+}
+
+function getGmailConfig() {
+  const user = getEnvVar("GMAIL_USER")
+  const pass = getEnvVar("GMAIL_APP_PASSWORD")
+  if (user && pass) {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user,
+        pass,
+      },
+    })
+    const fromName = getEnvVar("GMAIL_FROM_NAME") || "Valdivia Automotores"
+    return { transporter, from: `"${fromName}" <${user}>` }
+  }
+  return null
+}
+
 function getResendConfig(): { resend: Resend | null; from: string } {
-  let key = ""
-  try {
-    const metaKey = (import.meta as any).env?.RESEND_API_KEY
-    if (metaKey) key = String(metaKey)
-  } catch { /* ignorar */ }
-
-  if (!key && typeof process !== "undefined" && process.env?.RESEND_API_KEY) {
-    key = process.env.RESEND_API_KEY
-  }
-
-  let from = "Valdivia Automotores <onboarding@resend.dev>"
-  try {
-    const metaFrom = (import.meta as any).env?.RESEND_FROM_EMAIL || (import.meta as any).env?.MAIL_FROM
-    if (metaFrom) from = String(metaFrom)
-  } catch { /* ignorar */ }
-
-  if (typeof process !== "undefined" && (process.env?.RESEND_FROM_EMAIL || process.env?.MAIL_FROM)) {
-    from = process.env.RESEND_FROM_EMAIL || process.env.MAIL_FROM || from
-  }
+  const key = getEnvVar("RESEND_API_KEY") || ""
+  let from = getEnvVar("RESEND_FROM_EMAIL") || getEnvVar("MAIL_FROM") || "Valdivia Automotores <onboarding@resend.dev>"
 
   const resend = key ? new Resend(key) : null
   return { resend, from }
@@ -66,6 +79,25 @@ function formatAmount(value: number): string {
 }
 
 async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean> {
+  // 1. Priorizar Gmail si se configuraron credenciales
+  const gmailConfig = getGmailConfig()
+  if (gmailConfig) {
+    try {
+      await gmailConfig.transporter.sendMail({
+        from: gmailConfig.from,
+        to,
+        subject,
+        html,
+      })
+      console.log(`[GMAIL SUCCESS] Enviado exitosamente a ${to} mediante Gmail SMTP`)
+      return true
+    } catch (error) {
+      console.error("[GMAIL ERROR] Error enviando correo mediante Gmail SMTP:", error)
+      return false
+    }
+  }
+
+  // 2. Fallback a Resend
   const { resend, from } = getResendConfig()
 
   if (!resend) {
