@@ -1,10 +1,12 @@
 ---
+export const prerender = false
+
 import Layout from "@/layouts/Layout.astro"
 import { raffle, formatCurrency } from "@/data/raffle"
 import { getDBTickets } from "@/lib/services/tickets"
 import { ArrowRight, Search, Shuffle, Clock } from "lucide-astro"
 
-// Cargar los 200 tickets desde la DB para renderizado completo de la grilla
+// Cargar los 200 tickets en tiempo real desde la DB
 const initialTickets = await getDBTickets("", "all", 200)
 ---
 

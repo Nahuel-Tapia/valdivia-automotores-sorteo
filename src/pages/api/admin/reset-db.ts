@@ -17,23 +17,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     console.log("🧹 Reseteando base de datos por solicitud admin...")
 
-    // 1. Limpiar tickets y órdenes
-    await db.execute("DELETE FROM tickets;")
+    // 1. Limpiar órdenes y restaurar los 200 boletos a estado disponible
     await db.execute("DELETE FROM orders;")
-
-    // 2. Re-insertar 200 tickets (001 a 200) libres
-    const now = Date.now()
-    const statements = []
-
-    for (let i = 1; i <= 200; i++) {
-      const numStr = String(i).padStart(3, "0")
-      statements.push({
-        sql: "INSERT INTO tickets (number, status, order_id, session_id, reserved_until, updated_at) VALUES (?, 'available', NULL, NULL, NULL, ?)",
-        args: [numStr, now],
-      })
-    }
-
-    await db.batch(statements, "write")
+    await db.execute("UPDATE tickets SET status = 'available', order_id = NULL, session_id = NULL, reserved_until = NULL;")
 
     console.log("✨ Base de datos reseteada con éxito (200 boletos disponibles).")
 

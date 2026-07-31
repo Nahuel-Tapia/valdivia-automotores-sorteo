@@ -29,48 +29,10 @@ async function resetDatabase() {
   console.log(`📍 Conectando a DB: ${url}`)
   const db = createClient({ url, authToken })
 
-  // 1. Limpiar tablas
-  console.log("🧹 Eliminando todas las órdenes y tickets existentes...")
-  await db.execute("DELETE FROM tickets;")
+  // 1. Limpiar órdenes y restaurar tickets a available
+  console.log("🧹 Reseteando órdenes y liberando los 200 boletos...")
   await db.execute("DELETE FROM orders;")
-
-  // 2. Volver a crear estructura si no existe
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS admins (
-      id TEXT PRIMARY KEY,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      created_at INTEGER NOT NULL
-    );
-  `)
-
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS orders (
-      id TEXT PRIMARY KEY,
-      buyer_name TEXT NOT NULL,
-      buyer_email TEXT NOT NULL,
-      buyer_dni TEXT NOT NULL,
-      buyer_phone TEXT NOT NULL,
-      ticket_count INTEGER NOT NULL,
-      total_amount REAL NOT NULL,
-      status TEXT NOT NULL,
-      payment_method TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      mp_payment_id TEXT
-    );
-  `)
-
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS tickets (
-      number TEXT PRIMARY KEY,
-      status TEXT NOT NULL,
-      order_id TEXT,
-      session_id TEXT,
-      reserved_until INTEGER,
-      updated_at INTEGER NOT NULL,
-      FOREIGN KEY (order_id) REFERENCES orders(id)
-    );
-  `)
+  await db.execute("UPDATE tickets SET status = 'available', order_id = NULL, session_id = NULL, reserved_until = NULL;")
 
   // 3. Crear Admin por defecto si no existe
   const adminCheck = await db.execute("SELECT COUNT(*) as count FROM admins")
@@ -83,20 +45,23 @@ async function resetDatabase() {
     console.log("👤 Admin creado: admin@valdivia.com / admin123")
   }
 
-  // 4. Insertar los 200 tickets libres (001 a 200)
-  console.log("🎟️ Re-insertando 200 boletos (001 a 200) con estado 'available'...")
-  const now = Date.now()
-  const statements = []
+  // 4. Verificar si faltan boletos para insertar (001 a 200)
+  const ticketCheck = await db.execute("SELECT COUNT(*) as count FROM tickets")
+  if (Number(ticketCheck.rows[0].count) === 0) {
+    console.log("🎟️ Insertando 200 boletos (001 a 200) con estado 'available'...")
+    const now = Date.now()
+    const statements = []
 
-  for (let i = 1; i <= 200; i++) {
-    const numStr = String(i).padStart(3, "0")
-    statements.push({
-      sql: "INSERT INTO tickets (number, status, order_id, session_id, reserved_until, updated_at) VALUES (?, 'available', NULL, NULL, NULL, ?)",
-      args: [numStr, now],
-    })
+    for (let i = 1; i <= 200; i++) {
+      const numStr = String(i).padStart(3, "0")
+      statements.push({
+        sql: "INSERT INTO tickets (number, status, order_id, session_id, reserved_until, updated_at) VALUES (?, 'available', NULL, NULL, NULL, ?)",
+        args: [numStr, now],
+      })
+    }
+
+    await db.batch(statements, "write")
   }
-
-  await db.batch(statements, "write")
 
   console.log("✨ ¡Base de datos reseteada con éxito! 200 boletos disponibles (001 a 200) y 0 órdenes.")
 }
