@@ -177,6 +177,6 @@ export async function getMercadoPagoPaymentStatus(paymentId: string): Promise<Me
     }
   } catch (error) {
     console.error(`Error consultando pago #${paymentId} en Mercado Pago:`, error)
-    return { id: paymentId, status: "approved" }
+    return { id: paymentId, status: undefined }
   }
 }

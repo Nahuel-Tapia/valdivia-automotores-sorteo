@@ -42,8 +42,19 @@ function getPaymentStatusFromBody(
 export const POST: APIRoute = async ({ request }) => {
   try {
     const urlParams = new URL(request.url).searchParams
-    const paymentId = urlParams.get("data.id") || urlParams.get("id") || undefined
     const body = await readJsonBody(request)
+    
+    // Solo procesamos webhooks de tipo 'payment'
+    const type = urlParams.get("type") || urlParams.get("topic") || getString(body.type) || getString(body.topic)
+    if (type && type !== "payment") {
+      console.log(`📡 Webhook ignorado (tipo: ${type})`)
+      return new Response(JSON.stringify({ received: true, ignored: true, type }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+
+    const paymentId = urlParams.get("data.id") || urlParams.get("id") || undefined
 
     const token = getAccessToken()
     let payment: MercadoPagoPaymentStatus = getPaymentStatusFromBody(body, paymentId)
