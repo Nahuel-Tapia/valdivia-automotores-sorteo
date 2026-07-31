@@ -334,9 +334,22 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       }
     })
 
-    logoutBtn?.addEventListener("click", () => {
+    function handleSessionExpired() {
       localStorage.removeItem("valdivia_admin_token")
-      location.reload()
+      loginSec?.classList.remove("hidden")
+      dashSec?.classList.add("hidden")
+      logoutBtn?.classList.add("hidden")
+      exportBtn?.classList.add("hidden")
+      resetDbBtn?.classList.add("hidden")
+      editPriceBtn?.classList.add("hidden")
+      orderModal?.classList.add("hidden")
+      orderModal?.classList.remove("flex")
+      priceModal?.classList.add("hidden")
+      priceModal?.classList.remove("flex")
+    }
+
+    logoutBtn?.addEventListener("click", () => {
+      handleSessionExpired()
     })
 
     exportBtn?.addEventListener("click", async () => {
@@ -345,10 +358,9 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         const res = await fetch("/api/admin/export", {
           headers: { Authorization: `Bearer ${currentToken}` },
         })
-        if (res.status === 401) {
-          alert("Sesión expirada. Por favor volvaz a ingresar.")
-          localStorage.removeItem("valdivia_admin_token")
-          location.reload()
+        if (res.status === 401 || res.status === 403) {
+          alert("🔒 Sesión expirada. Por favor volvaz a ingresar.")
+          handleSessionExpired()
           return
         }
         const blob = await res.blob()
@@ -427,8 +439,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
 
         if (res.status === 401 || res.status === 403) {
           alert("🔒 Tu sesión de administrador ha expirado. Por favor, ingresa nuevamente.")
-          localStorage.removeItem("valdivia_admin_token")
-          location.reload()
+          handleSessionExpired()
           return
         }
 
@@ -466,8 +477,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     async function showDashboard() {
       const currentToken = localStorage.getItem("valdivia_admin_token")
       if (!currentToken) {
-        loginSec?.classList.remove("hidden")
-        dashSec?.classList.add("hidden")
+        handleSessionExpired()
         return
       }
 
@@ -484,9 +494,9 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         const res = await fetch("/api/admin/metrics", {
           headers: { Authorization: `Bearer ${currentToken}` },
         })
-        if (res.status === 401) {
-          localStorage.removeItem("valdivia_admin_token")
-          location.reload()
+        if (res.status === 401 || res.status === 403) {
+          alert("🔒 Tu sesión ha expirado. Por favor ingresá nuevamente.")
+          handleSessionExpired()
           return
         }
         const data = await res.json()
