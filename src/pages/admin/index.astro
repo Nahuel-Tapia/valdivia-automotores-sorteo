@@ -297,6 +297,11 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     const logoutBtn = document.getElementById("btn-logout")
     const exportBtn = document.getElementById("btn-export-csv")
     const searchInput = document.getElementById("search-orders") as HTMLInputElement | null
+    const resetDbBtn = document.getElementById("btn-reset-db")
+    const editPriceBtn = document.getElementById("btn-edit-price")
+    const priceModal = document.getElementById("price-modal")
+    const priceModalCloseBtn = document.getElementById("price-modal-close-btn")
+    const priceModalCancelBtn = document.getElementById("price-modal-cancel-btn")
 
     // Elementos del Modal
     const orderModal = document.getElementById("order-modal")
@@ -423,8 +428,6 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       }
     })
 
-    const resetDbBtn = document.getElementById("btn-reset-db")
-
     resetDbBtn?.addEventListener("click", async () => {
       if (!confirm("⚠️ ¿Estás seguro de que deseas resetear por completo la base de datos?\n\nSe borrarán todas las órdenes y se restablecerán los 200 boletos a estado disponible.")) {
         return
@@ -457,11 +460,6 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         alert("Error de conexión al intentar resetear la base de datos.")
       }
     })
-
-    const editPriceBtn = document.getElementById("btn-edit-price")
-    const priceModal = document.getElementById("price-modal")
-    const priceModalCloseBtn = document.getElementById("price-modal-close-btn")
-    const priceModalCancelBtn = document.getElementById("price-modal-cancel-btn")
 
     editPriceBtn?.addEventListener("click", async () => {
       await loadSettings()
