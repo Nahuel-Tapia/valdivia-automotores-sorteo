@@ -306,10 +306,27 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
 
     let allOrders: any[] = []
 
-    const token = localStorage.getItem("valdivia_admin_token")
-    if (token) {
-      showDashboard()
+    function getAdminToken(): string | null {
+      return sessionStorage.getItem("valdivia_admin_token") || localStorage.getItem("valdivia_admin_token")
     }
+
+    function handleSessionExpired() {
+      sessionStorage.removeItem("valdivia_admin_token")
+      localStorage.removeItem("valdivia_admin_token")
+      loginSec?.classList.remove("hidden")
+      dashSec?.classList.add("hidden")
+      logoutBtn?.classList.add("hidden")
+      exportBtn?.classList.add("hidden")
+      resetDbBtn?.classList.add("hidden")
+      editPriceBtn?.classList.add("hidden")
+      orderModal?.classList.add("hidden")
+      orderModal?.classList.remove("flex")
+      priceModal?.classList.add("hidden")
+      priceModal?.classList.remove("flex")
+    }
+
+    // Siempre solicitar credenciales de inicio de sesión al ingresar/recargar la pestaña /admin
+    handleSessionExpired()
 
     form?.addEventListener("submit", async (e) => {
       e.preventDefault()
@@ -324,7 +341,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         })
         const data = await res.json()
         if (data.success && data.token) {
-          localStorage.setItem("valdivia_admin_token", data.token)
+          sessionStorage.setItem("valdivia_admin_token", data.token)
           showDashboard()
         } else {
           alert(data.error || "Credenciales incorrectas")
@@ -334,26 +351,12 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       }
     })
 
-    function handleSessionExpired() {
-      localStorage.removeItem("valdivia_admin_token")
-      loginSec?.classList.remove("hidden")
-      dashSec?.classList.add("hidden")
-      logoutBtn?.classList.add("hidden")
-      exportBtn?.classList.add("hidden")
-      resetDbBtn?.classList.add("hidden")
-      editPriceBtn?.classList.add("hidden")
-      orderModal?.classList.add("hidden")
-      orderModal?.classList.remove("flex")
-      priceModal?.classList.add("hidden")
-      priceModal?.classList.remove("flex")
-    }
-
     logoutBtn?.addEventListener("click", () => {
       handleSessionExpired()
     })
 
     exportBtn?.addEventListener("click", async () => {
-      const currentToken = localStorage.getItem("valdivia_admin_token")
+      const currentToken = getAdminToken()
       try {
         const res = await fetch("/api/admin/export", {
           headers: { Authorization: `Bearer ${currentToken}` },
@@ -393,7 +396,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
 
     resendEmailBtn?.addEventListener("click", async () => {
       if (!currentSelectedOrderId) return
-      const currentToken = localStorage.getItem("valdivia_admin_token")
+      const currentToken = getAdminToken()
       resendEmailBtn.setAttribute("disabled", "true")
       resendEmailBtn.textContent = "Enviando correo..."
 
@@ -427,7 +430,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         return
       }
 
-      const currentToken = localStorage.getItem("valdivia_admin_token")
+      const currentToken = getAdminToken()
       try {
         const res = await fetch("/api/admin/reset-db", {
           method: "POST",
@@ -475,7 +478,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     priceModalCancelBtn?.addEventListener("click", closePriceModal)
 
     async function showDashboard() {
-      const currentToken = localStorage.getItem("valdivia_admin_token")
+      const currentToken = getAdminToken()
       if (!currentToken) {
         handleSessionExpired()
         return
@@ -517,7 +520,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     }
 
     async function loadSettings() {
-      const currentToken = localStorage.getItem("valdivia_admin_token")
+      const currentToken = getAdminToken()
       try {
         const res = await fetch("/api/admin/settings", {
           headers: { Authorization: `Bearer ${currentToken}` },
@@ -535,7 +538,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     const priceForm = document.getElementById("form-update-price") as HTMLFormElement | null
     priceForm?.addEventListener("submit", async (e) => {
       e.preventDefault()
-      const currentToken = localStorage.getItem("valdivia_admin_token")
+      const currentToken = getAdminToken()
       const priceInput = document.getElementById("input-ticket-price") as HTMLInputElement | null
       const newPrice = Number(priceInput?.value)
 
@@ -615,7 +618,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     }
 
     async function openOrderDetailModal(orderId: string) {
-      const currentToken = localStorage.getItem("valdivia_admin_token")
+      const currentToken = getAdminToken()
       currentSelectedOrderId = orderId
       orderModal?.classList.remove("hidden")
       orderModal?.classList.add("flex")
