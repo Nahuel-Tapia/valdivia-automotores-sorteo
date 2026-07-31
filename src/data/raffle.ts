@@ -22,7 +22,7 @@ export const raffle = {
   currency: "ARS",
   soldPercentage: 68,
   totalNumbers: 200,
-  heroImage: "/Portada.png",
+  heroImage: "/portada.png",
   interiorImage: "/premio-interior.png",
   prizeSpecs: [
     { label: "Motor", value: "Eléctrico 87cv" },
