@@ -11,6 +11,10 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         <h1 class="mt-1 font-display text-2xl font-800 sm:text-3xl">Administración de Sorteo</h1>
       </div>
       <div class="flex items-center gap-3">
+        <button id="btn-edit-price" class="hidden btn-secondary text-xs py-2 px-3 bg-brand/20 border-brand/30 text-white hover:bg-brand">
+          <DollarSign class="h-4 w-4 text-brand-light" />
+          Precio Boleto
+        </button>
         <button id="btn-reset-db" class="hidden btn-secondary text-xs py-2 px-3 bg-red-600/90 border-red-500 text-white hover:bg-red-700">
           <RotateCcw class="h-4 w-4" />
           Resetear DB
@@ -114,34 +118,6 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         </div>
         <p class="mt-3 font-display text-2xl font-800 text-navy" id="m-available">200</p>
         <p class="mt-1 text-xs text-navy/60">De 200 totales</p>
-    </div>
-
-    <!-- Ajuste Dinámico de Precio de Boleto -->
-    <div class="card p-6 border-l-4 border-l-brand shadow-md">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <span class="text-xs font-700 uppercase tracking-wider text-brand">Configuración del Sorteo</span>
-          <h2 class="font-display text-lg font-800 text-navy mt-0.5">Precio Oficial por Boleto</h2>
-          <p class="text-xs text-navy/60">Modificá el valor individual de cada número. Se actualizará inmediatamente en la tienda y en Mercado Pago.</p>
-        </div>
-        
-        <form id="form-update-price" class="flex items-center gap-2">
-          <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-700 text-navy/50">$</span>
-            <input 
-              type="number" 
-              id="input-ticket-price" 
-              min="1" 
-              step="1" 
-              required
-              class="h-10 w-36 rounded-xl border border-navy/15 pl-7 pr-3 text-sm font-700 text-navy focus:border-brand focus:outline-none"
-              placeholder="20"
-            />
-          </div>
-          <button type="submit" id="btn-save-price" class="btn-primary text-xs py-2.5 px-4">
-            Guardar Precio
-          </button>
-        </form>
       </div>
     </div>
 
@@ -257,6 +233,56 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
           <!-- Botón aprobar si está pending -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal para Modificar Precio del Boleto -->
+  <div id="price-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-navy/60 backdrop-blur-sm p-4">
+    <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-navy/10 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand">
+            <DollarSign class="h-5 w-5" />
+          </span>
+          <div>
+            <h3 class="font-display text-base font-800 text-navy">Editar Precio por Boleto</h3>
+            <p class="text-xs text-navy/60">Configuración global del sorteo</p>
+          </div>
+        </div>
+        <button type="button" id="price-modal-close-btn" class="rounded-lg p-1.5 text-navy/40 hover:bg-cloud hover:text-navy">
+          <X class="h-5 w-5" />
+        </button>
+      </div>
+
+      <form id="form-update-price" class="space-y-4">
+        <div>
+          <label class="block text-xs font-700 text-navy/70 uppercase mb-1">Nuevo Valor Individual ($)</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-700 text-navy/50">$</span>
+            <input 
+              type="number" 
+              id="input-ticket-price" 
+              min="1" 
+              step="1" 
+              required
+              class="h-11 w-full rounded-xl border border-navy/15 pl-8 pr-3 text-base font-700 text-navy focus:border-brand focus:outline-none"
+              placeholder="20"
+            />
+          </div>
+          <p class="mt-2 text-xs text-navy/50 leading-relaxed">
+            Se aplicará inmediatamente en el cotizador de boletos de la web y en las preferencias de cobro de Mercado Pago.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" id="price-modal-cancel-btn" class="btn-secondary text-xs py-2.5 px-4">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-save-price" class="btn-primary text-xs py-2.5 px-4">
+            Guardar Cambios
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </Layout>
@@ -418,6 +444,25 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       }
     })
 
+    const editPriceBtn = document.getElementById("btn-edit-price")
+    const priceModal = document.getElementById("price-modal")
+    const priceModalCloseBtn = document.getElementById("price-modal-close-btn")
+    const priceModalCancelBtn = document.getElementById("price-modal-cancel-btn")
+
+    editPriceBtn?.addEventListener("click", async () => {
+      await loadSettings()
+      priceModal?.classList.remove("hidden")
+      priceModal?.classList.add("flex")
+    })
+
+    const closePriceModal = () => {
+      priceModal?.classList.add("hidden")
+      priceModal?.classList.remove("flex")
+    }
+
+    priceModalCloseBtn?.addEventListener("click", closePriceModal)
+    priceModalCancelBtn?.addEventListener("click", closePriceModal)
+
     async function showDashboard() {
       const currentToken = localStorage.getItem("valdivia_admin_token")
       if (!currentToken) {
@@ -428,6 +473,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
 
       loginSec?.classList.add("hidden")
       dashSec?.classList.remove("hidden")
+      editPriceBtn?.classList.remove("hidden")
       logoutBtn?.classList.remove("hidden")
       exportBtn?.classList.remove("hidden")
       resetDbBtn?.classList.remove("hidden")
@@ -500,6 +546,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         const data = await res.json()
         if (data.success) {
           alert(`✨ ${data.message}`)
+          closePriceModal()
           showDashboard()
         } else {
           alert(`❌ ${data.error || "No se pudo actualizar el precio."}`)
