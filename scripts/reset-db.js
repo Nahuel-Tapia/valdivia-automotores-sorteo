@@ -3,6 +3,30 @@ import bcrypt from "bcryptjs"
 import fs from "node:fs"
 import path from "node:path"
 
+const DEFAULT_ADMIN_EMAIL = "valdiviasorteo@admin.com"
+const DEFAULT_ADMIN_PASSWORD = "lucasvaldivia"
+
+async function syncDefaultAdmin(db) {
+  const hash = await bcrypt.hash(DEFAULT_ADMIN_PASSWORD, 10)
+  const existingAdmin = await db.execute({
+    sql: "SELECT id FROM admins WHERE id = ? OR email = ? LIMIT 1",
+    args: ["admin-1", DEFAULT_ADMIN_EMAIL],
+  })
+
+  if (existingAdmin.rows.length > 0) {
+    await db.execute({
+      sql: "UPDATE admins SET id = ?, email = ?, password_hash = ?, created_at = ? WHERE id = ? OR email = ?",
+      args: ["admin-1", DEFAULT_ADMIN_EMAIL, hash, Date.now(), "admin-1", DEFAULT_ADMIN_EMAIL],
+    })
+    return
+  }
+
+  await db.execute({
+    sql: "INSERT INTO admins (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
+    args: ["admin-1", DEFAULT_ADMIN_EMAIL, hash, Date.now()],
+  })
+}
+
 async function resetDatabase() {
   console.log("🔄 Iniciando reseteo completo de la base de datos...")
 
@@ -35,15 +59,8 @@ async function resetDatabase() {
   await db.execute("DELETE FROM orders;")
 
   // 3. Crear Admin por defecto si no existe
-  const adminCheck = await db.execute("SELECT COUNT(*) as count FROM admins")
-  if (Number(adminCheck.rows[0].count) === 0) {
-    const hash = await bcrypt.hash("lucasvaldivia", 10)
-    await db.execute({
-      sql: "INSERT INTO admins (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-      args: ["admin-1", "valdiviasorteo@admin.com", hash, Date.now()],
-    })
-    console.log("👤 Admin creado: valdiviasorteo@admin.com / lucasvaldivia")
-  }
+  await syncDefaultAdmin(db)
+  console.log(`👤 Admin sincronizado: ${DEFAULT_ADMIN_EMAIL} / ${DEFAULT_ADMIN_PASSWORD}`)
 
   // 4. Verificar si faltan boletos para insertar (001 a 200)
   const ticketCheck = await db.execute("SELECT COUNT(*) as count FROM tickets")
