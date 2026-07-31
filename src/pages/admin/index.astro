@@ -114,6 +114,34 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         </div>
         <p class="mt-3 font-display text-2xl font-800 text-navy" id="m-available">200</p>
         <p class="mt-1 text-xs text-navy/60">De 200 totales</p>
+    </div>
+
+    <!-- Ajuste Dinámico de Precio de Boleto -->
+    <div class="card p-6 border-l-4 border-l-brand shadow-md">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <span class="text-xs font-700 uppercase tracking-wider text-brand">Configuración del Sorteo</span>
+          <h2 class="font-display text-lg font-800 text-navy mt-0.5">Precio Oficial por Boleto</h2>
+          <p class="text-xs text-navy/60">Modificá el valor individual de cada número. Se actualizará inmediatamente en la tienda y en Mercado Pago.</p>
+        </div>
+        
+        <form id="form-update-price" class="flex items-center gap-2">
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-700 text-navy/50">$</span>
+            <input 
+              type="number" 
+              id="input-ticket-price" 
+              min="1" 
+              step="1" 
+              required
+              class="h-10 w-36 rounded-xl border border-navy/15 pl-7 pr-3 text-sm font-700 text-navy focus:border-brand focus:outline-none"
+              placeholder="20"
+            />
+          </div>
+          <button type="submit" id="btn-save-price" class="btn-primary text-xs py-2.5 px-4">
+            Guardar Precio
+          </button>
+        </form>
       </div>
     </div>
 
@@ -404,6 +432,8 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       exportBtn?.classList.remove("hidden")
       resetDbBtn?.classList.remove("hidden")
 
+      loadSettings()
+
       try {
         const res = await fetch("/api/admin/metrics", {
           headers: { Authorization: `Bearer ${currentToken}` },
@@ -429,6 +459,55 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         console.error("Error al cargar métricas de admin:", err)
       }
     }
+
+    async function loadSettings() {
+      const currentToken = localStorage.getItem("valdivia_admin_token")
+      try {
+        const res = await fetch("/api/admin/settings", {
+          headers: { Authorization: `Bearer ${currentToken}` },
+        })
+        const data = await res.json()
+        if (data.success && data.ticketPrice) {
+          const input = document.getElementById("input-ticket-price") as HTMLInputElement | null
+          if (input) input.value = String(data.ticketPrice)
+        }
+      } catch (err) {
+        console.error("Error cargando precio de ticket:", err)
+      }
+    }
+
+    const priceForm = document.getElementById("form-update-price") as HTMLFormElement | null
+    priceForm?.addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const currentToken = localStorage.getItem("valdivia_admin_token")
+      const priceInput = document.getElementById("input-ticket-price") as HTMLInputElement | null
+      const newPrice = Number(priceInput?.value)
+
+      if (isNaN(newPrice) || newPrice <= 0) {
+        alert("Por favor ingresá un precio válido mayor a 0.")
+        return
+      }
+
+      try {
+        const res = await fetch("/api/admin/settings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentToken}`,
+          },
+          body: JSON.stringify({ ticketPrice: newPrice }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          alert(`✨ ${data.message}`)
+          showDashboard()
+        } else {
+          alert(`❌ ${data.error || "No se pudo actualizar el precio."}`)
+        }
+      } catch {
+        alert("Error de conexión al actualizar el precio.")
+      }
+    })
 
     function renderOrdersTable(orders: any[]) {
       const tbody = document.getElementById("orders-table-body")

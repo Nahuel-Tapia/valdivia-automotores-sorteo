@@ -3,6 +3,7 @@ import { raffle } from "@/data/raffle"
 import { db, initDB } from "@/lib/db"
 import { createOrderWithTicketsAtomic } from "@/lib/services/tickets"
 import { createMPPreference } from "@/lib/services/mercadopago"
+import { getTicketPrice } from "@/lib/services/settings"
 
 export const prerender = false
 
@@ -55,7 +56,8 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
-    const expectedAmount = count * raffle.ticketBasePrice
+    const ticketUnitPrice = await getTicketPrice()
+    const expectedAmount = count * ticketUnitPrice
     const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`
     const requestTarget = Array.isArray(selectedNumbers) && selectedNumbers.length > 0 ? selectedNumbers : count
 
@@ -91,7 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
     const mpRes = await createMPPreference({
       orderId,
       ticketCount: count,
-      unitPrice: raffle.ticketBasePrice,
+      unitPrice: ticketUnitPrice,
       totalAmount: expectedAmount,
       buyerName: nameStr,
       buyerEmail: emailStr,

@@ -88,6 +88,15 @@ export async function initDB() {
       );
     `)
 
+    // 4. Crear tabla de configuraciones
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `)
+
     // 4. Seed de Admin por defecto si no existe ninguno
     const adminCheck = await db.execute("SELECT COUNT(*) as count FROM admins")
     if (Number(adminCheck.rows[0].count) === 0) {

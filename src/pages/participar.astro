@@ -4,9 +4,11 @@ export const prerender = false
 import Layout from "@/layouts/Layout.astro"
 import { raffle, formatCurrency } from "@/data/raffle"
 import { getDBTickets } from "@/lib/services/tickets"
+import { getTicketPrice } from "@/lib/services/settings"
 import { ArrowRight, Search, Shuffle, Clock } from "lucide-astro"
 
-// Cargar los 200 tickets en tiempo real desde la DB
+// Cargar precio dinámico y boletos en tiempo real
+const ticketUnitPrice = await getTicketPrice()
 const initialTickets = await getDBTickets("", "all", 200)
 ---
 
@@ -107,7 +109,7 @@ const initialTickets = await getDBTickets("", "all", 200)
           </div>
           <div class="flex items-center justify-between">
             <dt class="text-navy/60">Precio unitario</dt>
-            <dd class="font-700 text-navy" id="sum-unit">{formatCurrency(raffle.ticketBasePrice)}</dd>
+            <dd class="font-700 text-navy" id="sum-unit" data-unit-price={ticketUnitPrice}>{formatCurrency(ticketUnitPrice)}</dd>
           </div>
           <div class="h-px bg-navy/10"></div>
           <div class="flex items-center justify-between">
@@ -136,7 +138,8 @@ const initialTickets = await getDBTickets("", "all", 200)
       localStorage.setItem("valdivia_session_id", sessionId)
     }
 
-    const base = raffle.ticketBasePrice
+    const baseAttr = document.getElementById("sum-unit")?.getAttribute("data-unit-price")
+    const base = baseAttr ? Number(baseAttr) : (raffle.ticketBasePrice || 20)
     const seatBtns = Array.from(document.querySelectorAll<HTMLButtonElement>(".seat-btn"))
     const timerBar = document.getElementById("reservation-timer-bar")
     const countdownEl = document.getElementById("countdown-timer")
