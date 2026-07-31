@@ -135,7 +135,16 @@ export async function toggleSeatLock(
     return { success: false, error: "Este boleto acaba de ser reservado por otro comprador." }
   }
 
-  // 5. Si está disponible -> Bloquear exclusivamente para esta sesión
+  // 5. Si está disponible -> Verificar límite máximo de 5 boletos por reserva/sesión
+  const countRes = await db.execute({
+    sql: "SELECT COUNT(*) as count FROM tickets WHERE session_id = ? AND status = 'reserved'",
+    args: [sessionId],
+  })
+  const currentCount = Number(countRes.rows[0]?.count || 0)
+  if (currentCount >= 5) {
+    return { success: false, error: "Solo podés reservar un máximo de 5 números por compra." }
+  }
+
   const lockRes = await db.execute({
     sql: "UPDATE tickets SET status = 'reserved', session_id = ?, reserved_until = ?, updated_at = ? WHERE number = ? AND status = 'available'",
     args: [sessionId, reservedUntil, now, number],

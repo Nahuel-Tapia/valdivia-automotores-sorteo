@@ -13,9 +13,9 @@ export const POST: APIRoute = async ({ request }) => {
     const { tickets, selectedNumbers, sessionId, buyer } = body
 
     const count = Number(tickets)
-    if (!count || count < 1) {
+    if (!count || count < 1 || count > 5) {
       return new Response(
-        JSON.stringify({ error: "Cantidad de números inválida" }),
+        JSON.stringify({ error: "Solo podés comprar entre 1 y un máximo de 5 números por reserva." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       )
     }

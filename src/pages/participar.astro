@@ -42,11 +42,11 @@ const initialTickets = await getDBTickets("", "all", 200)
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 class="font-display text-lg font-700 text-navy">Selección de Butacas / Boletos</h2>
-            <p class="text-xs text-navy/60">Tocá cualquier casilla verde para congelarla inmediatamente</p>
+            <p class="text-xs text-navy/60">Tocá cualquier casilla verde para congelarla <strong class="text-brand">(Máximo 5 números por reserva)</strong></p>
           </div>
           <button type="button" id="btn-random" class="btn-secondary text-sm py-2 px-3">
             <Shuffle class="h-4 w-4 text-brand" />
-            Selección Aleatoria
+            Selección Aleatoria (hasta 5)
           </button>
         </div>
 
@@ -199,6 +199,12 @@ const initialTickets = await getDBTickets("", "all", 200)
         const num = btn.dataset.number
         if (!num) return
 
+        const isMine = selectedNumbers.includes(num)
+        if (!isMine && selectedNumbers.length >= 5) {
+          alert("⚠️ Podés reservar un máximo de 5 números por compra.")
+          return
+        }
+
         btn.style.opacity = "0.5"
         try {
           const res = await fetch("/api/tickets/seat-lock", {
@@ -218,6 +224,23 @@ const initialTickets = await getDBTickets("", "all", 200)
           btn.style.opacity = "1"
         }
       })
+    })
+
+    // Botón Selección Aleatoria (hasta completar 5 boletos)
+    document.getElementById("btn-random")?.addEventListener("click", () => {
+      const availableBtns = seatBtns.filter((btn) => !btn.disabled && !selectedNumbers.includes(btn.dataset.number ?? ""))
+      if (availableBtns.length === 0) {
+        alert("No hay más números disponibles.")
+        return
+      }
+      const needed = 5 - selectedNumbers.length
+      if (needed <= 0) {
+        alert("Ya tenés seleccionados los 5 números máximos permitidos.")
+        return
+      }
+      const shuffled = [...availableBtns].sort(() => 0.5 - Math.random())
+      const toPick = shuffled.slice(0, needed)
+      toPick.forEach((btn) => btn.click())
     })
 
     const fetchLiveStatus = async () => {
