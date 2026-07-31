@@ -67,6 +67,7 @@ const hotspots = carHotspots || [];
           </div>
 
           <!-- Fallback Static Images for Black / Blue colors -->
+          {/* Fallback Static Images for Black / Blue colors */}
           {colors.map((color) => (
             <img 
               src={color.image}
@@ -75,6 +76,16 @@ const hotspots = carHotspots || [];
               class="fallback-img absolute inset-0 w-full h-full object-contain p-8 hidden select-none filter drop-shadow-[0_20px_25px_rgba(31,42,82,0.2)]"
             />
           ))}
+        </div>
+
+        <!-- Superimposed Brand Logo (Covering Gemini Watermark in Bottom-Right) -->
+        <div class="absolute bottom-6 right-6 sm:bottom-10 sm:right-12 md:bottom-12 md:right-16 z-30 pointer-events-none">
+          <img 
+            src="/logo.png" 
+            alt="Valdivia Automotores" 
+            class="h-10 sm:h-12 md:h-14 lg:h-16 w-auto object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] select-none"
+            onerror="this.src='/logo-valdivia.png'"
+          />
         </div>
 
         <!-- High-Contrast Color Selector Bar (Bottom Center) -->
