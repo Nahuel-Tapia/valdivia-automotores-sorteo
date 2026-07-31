@@ -365,8 +365,19 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       try {
         const res = await fetch("/api/admin/reset-db", {
           method: "POST",
-          headers: { Authorization: `Bearer ${currentToken}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentToken}`,
+          },
         })
+
+        if (res.status === 401 || res.status === 403) {
+          alert("🔒 Tu sesión de administrador ha expirado. Por favor, ingresa nuevamente.")
+          localStorage.removeItem("valdivia_admin_token")
+          location.reload()
+          return
+        }
+
         const data = await res.json()
         if (data.success) {
           alert(`✨ ${data.message}`)
