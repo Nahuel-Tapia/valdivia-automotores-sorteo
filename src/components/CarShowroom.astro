@@ -210,12 +210,18 @@ const hotspots = carHotspots || [];
     let startX = 0;
     let startFrameIndex = 0;
 
+    let resizeTimeout: ReturnType<typeof setTimeout>;
     function resizeCanvas() {
       if (!canvas || !container) return;
       const dpr = window.devicePixelRatio || 1;
       canvas.width = container.clientWidth * dpr;
       canvas.height = container.clientHeight * dpr;
       renderFrame();
+    }
+    
+    function debouncedResize() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(resizeCanvas, 150);
     }
 
     function renderFrame() {
@@ -238,16 +244,26 @@ const hotspots = carHotspots || [];
       }
     }
 
-    // ─── Smooth 60fps animation loop ───
+    let isAnimating = false;
+
+    // ─── Smooth animation loop (Battery optimized) ───
     function animate() {
       const diff = targetFrameIndex - currentFrameIndex;
       if (Math.abs(diff) > 0.01) {
         currentFrameIndex += diff * LERP_FACTOR;
         renderFrame();
+        requestAnimationFrame(animate);
+      } else {
+        isAnimating = false; // Stop RAF loop to save CPU/Battery
       }
-      requestAnimationFrame(animate);
     }
-    requestAnimationFrame(animate);
+    
+    function startAnimation() {
+      if (!isAnimating) {
+        isAnimating = true;
+        requestAnimationFrame(animate);
+      }
+    }
 
 
 
@@ -482,16 +498,26 @@ const hotspots = carHotspots || [];
       });
     }
 
-    initFastShowroom();
+    // ─── Lazy Load via IntersectionObserver ───
+    if (container) {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          initFastShowroom();
+          observer.disconnect();
+        }
+      }, { rootMargin: "200px" });
+      observer.observe(container);
+    } else {
+      initFastShowroom();
+    }
 
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', debouncedResize);
     resizeCanvas();
 
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
         targetFrameIndex = 0;
-        currentFrameIndex = 0;
-        renderFrame();
+        startAnimation();
       });
     }
 
@@ -507,6 +533,7 @@ const hotspots = carHotspots || [];
         if (!isDragging) return;
         const deltaX = clientX - startX;
         targetFrameIndex = startFrameIndex - (deltaX / DRAG_SENSITIVITY);
+        startAnimation();
       };
 
       const handleEnd = () => { isDragging = false; };
@@ -544,7 +571,10 @@ const hotspots = carHotspots || [];
 
         if (colorData && colorData.video) {
           if (canvas) canvas.classList.remove('hidden');
-          loadColorVideo(colorData).then(() => renderFrame());
+          loadColorVideo(colorData).then(() => {
+            renderFrame();
+            startAnimation();
+          });
         } else {
           if (canvas) canvas.classList.add('hidden');
           const fallback = document.getElementById(`fallback-img-${targetColorId}`);

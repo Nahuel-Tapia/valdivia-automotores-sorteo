@@ -79,8 +79,13 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
-    const url = new URL(request.url)
-    const baseUrl = `${url.protocol}//${url.host}`
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || new URL(request.url).host
+    const proto = request.headers.get("x-forwarded-proto") || "https"
+    let baseUrl = `${proto}://${host}`
+
+    if (baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1") || !baseUrl.startsWith("http")) {
+      baseUrl = "https://valdivia-automotores-sorteo.vercel.app"
+    }
 
     // Crear Preferencia oficial de Mercado Pago
     const mpRes = await createMPPreference({

@@ -112,14 +112,14 @@ export async function createMPPreference(params: CreatePreferenceParams): Promis
       },
     }
 
-    // URL base segura para webhooks (Mercado Pago requiere HTTPS)
-    const webhookBaseUrl = isLocalhost ? "https://valdivia-automotores-sorteo.vercel.app" : baseUrl
+    // URL base segura para webhooks y retorno (Mercado Pago requiere URL pública en producción)
+    const effectiveBaseUrl = isLocalhost ? "https://valdivia-automotores-sorteo.vercel.app" : baseUrl
 
-    preferenceBody.notification_url = `${webhookBaseUrl}/api/webhooks/mercadopago`
+    preferenceBody.notification_url = `${effectiveBaseUrl}/api/webhooks/mercadopago`
     preferenceBody.back_urls = {
-      success: `${baseUrl}/confirmacion?orderId=${orderId}`,
-      failure: `${baseUrl}/pago-rechazado?orderId=${orderId}`,
-      pending: `${baseUrl}/confirmacion?orderId=${orderId}`,
+      success: `${effectiveBaseUrl}/confirmacion?orderId=${orderId}`,
+      failure: `${effectiveBaseUrl}/pago-rechazado?orderId=${orderId}`,
+      pending: `${effectiveBaseUrl}/confirmacion?orderId=${orderId}`,
     }
     preferenceBody.auto_return = "approved"
 
