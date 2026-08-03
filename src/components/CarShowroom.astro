@@ -79,11 +79,11 @@ const hotspots = carHotspots || [];
         </div>
 
         <!-- Superimposed Brand Logo (Matches 360 floor gray & covers star watermark) -->
-        <div class="absolute bottom-20 right-12 sm:bottom-24 sm:right-16 md:bottom-28 md:right-20 lg:bottom-32 lg:right-24 z-30 pointer-events-none bg-[#D2D5DA] rounded-xl p-1 shadow-[0_0_20px_12px_#D2D5DA] flex items-center justify-center">
+        <div id="brand-watermark-logo" class="absolute z-30 pointer-events-none bg-[#D2D5DA] rounded-xl p-1 shadow-[0_0_15px_8px_#D2D5DA] flex items-center justify-center -translate-x-1/2 -translate-y-1/2 transition-all duration-300">
           <img 
             src="/logo-valdivia.png" 
             alt="Valdivia Automotores" 
-            class="h-10 sm:h-12 md:h-14 lg:h-16 w-auto object-contain mix-blend-multiply filter contrast-125 select-none"
+            class="h-12 w-auto object-contain mix-blend-multiply filter contrast-125 select-none"
           />
         </div>
 
@@ -186,6 +186,7 @@ const hotspots = carHotspots || [];
     const container = document.getElementById('showroom-360-card');
     const spinner = document.getElementById('loading-spinner');
     const resetBtn = document.getElementById('reset-view-btn');
+    const watermarkLogo = document.getElementById('brand-watermark-logo');
 
     const colorBtns = document.querySelectorAll('.color-btn');
     const hotspotCards = document.querySelectorAll('.hotspot-card');
@@ -250,6 +251,31 @@ const hotspots = carHotspots || [];
           const x = (canvas.width - drawW) / 2;
           const y = (canvas.height - drawH) / 2;
           ctx.drawImage(frame, x, y, drawW, drawH);
+
+          // Position the watermark logo dynamically over the star
+          if (watermarkLogo) {
+            const logoImg = watermarkLogo.querySelector('img');
+            const cssWidth = canvas.clientWidth;
+            const cssHeight = canvas.clientHeight;
+            const cssScale = Math.min(cssWidth / frame.width, cssHeight / frame.height) * 0.95;
+            const cssDrawW = frame.width * cssScale;
+            const cssDrawH = frame.height * cssScale;
+            const cssX = (cssWidth - cssDrawW) / 2;
+            const cssY = (cssHeight - cssDrawH) / 2;
+
+            // star location: X ~ 86.8%, Y ~ 72.5%
+            const targetX = cssX + cssDrawW * 0.868;
+            const targetY = cssY + cssDrawH * 0.725;
+
+            watermarkLogo.style.left = `${targetX}px`;
+            watermarkLogo.style.top = `${targetY}px`;
+
+            if (logoImg) {
+              // Scale the logo height proportionally to the car size (e.g. 9.5% of car height)
+              const computedHeight = Math.max(28, cssDrawH * 0.095);
+              logoImg.style.height = `${computedHeight}px`;
+            }
+          }
         }
       }
     }
