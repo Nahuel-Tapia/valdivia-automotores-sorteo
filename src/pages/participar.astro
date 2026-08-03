@@ -37,7 +37,7 @@ const initialTickets = await getDBTickets("", "all", 200)
     </div>
   </div>
 
-  <div class="container-app grid gap-8 py-10 lg:grid-cols-[1fr_360px]">
+  <div class="container-app grid gap-8 py-10 pb-28 lg:pb-10 lg:grid-cols-[1fr_360px]">
     <!-- Contenido Izquierdo: Mapa de Boletos -->
     <div class="space-y-6">
       <div class="card p-6">
@@ -123,6 +123,24 @@ const initialTickets = await getDBTickets("", "all", 200)
         </button>
         <p class="mt-3 text-center text-xs text-navy/50">Pago seguro con Mercado Pago</p>
       </div>
+      
+      <!-- Barra flotante fija para Mobile -->
+      <div id="mobile-checkout-bar" class="fixed bottom-0 inset-x-0 z-50 bg-navy/95 border-t border-white/15 p-3.5 backdrop-blur-xl shadow-[0_-10px_25px_rgba(0,0,0,0.35)] lg:hidden transition-all duration-300 hidden">
+        <div class="container-app flex items-center justify-between gap-3">
+          <div class="flex flex-col">
+            <span class="text-[11px] uppercase tracking-wider font-semibold text-white/70">
+              <strong id="mobile-sum-qty" class="text-white font-bold">0</strong> boletos seleccionados
+            </span>
+            <span class="font-display text-xl font-extrabold text-white leading-tight" id="mobile-sum-total">
+              {formatCurrency(0)}
+            </span>
+          </div>
+          <button id="btn-submit-checkout-mobile" class="btn-primary py-2.5 px-5 text-sm font-extrabold flex items-center gap-2 shadow-lg transform active:scale-95 transition-all">
+            Continuar al pago
+            <ArrowRight class="h-4.5 w-4.5" />
+          </button>
+        </div>
+      </div>
     </aside>
   </div>
 </Layout>
@@ -148,6 +166,10 @@ const initialTickets = await getDBTickets("", "all", 200)
     const sumUnit = document.getElementById("sum-unit")
     const sumTotal = document.getElementById("sum-total")
 
+    const mobileCheckoutBar = document.getElementById("mobile-checkout-bar")
+    const mobileSumQty = document.getElementById("mobile-sum-qty")
+    const mobileSumTotal = document.getElementById("mobile-sum-total")
+
     let selectedNumbers: string[] = []
     let earliestExpiry: number | null = null
     let timerInterval: any = null
@@ -159,11 +181,16 @@ const initialTickets = await getDBTickets("", "all", 200)
       if (sumUnit) sumUnit.textContent = formatARS(base)
       if (sumTotal) sumTotal.textContent = formatARS(totalAmount)
 
+      if (mobileSumQty) mobileSumQty.textContent = String(count)
+      if (mobileSumTotal) mobileSumTotal.textContent = formatARS(totalAmount)
+
       if (selectedNumbers.length > 0) {
         timerBar?.classList.remove("hidden")
+        mobileCheckoutBar?.classList.remove("hidden")
         if (badgeCount) badgeCount.textContent = String(selectedNumbers.length)
       } else {
         timerBar?.classList.add("hidden")
+        mobileCheckoutBar?.classList.add("hidden")
       }
     }
 
@@ -291,8 +318,8 @@ const initialTickets = await getDBTickets("", "all", 200)
       })
     })
 
-    // Botón Continuar al Pago
-    document.getElementById("btn-submit-checkout")?.addEventListener("click", () => {
+    // Botón Continuar al Pago (Desktop y Mobile)
+    const handleCheckoutRedirect = () => {
       if (selectedNumbers.length === 0) {
         alert("Por favor selecciona al menos 1 boleto verde en la grilla para continuar.")
         return
@@ -310,7 +337,10 @@ const initialTickets = await getDBTickets("", "all", 200)
       })
 
       window.location.href = "/checkout"
-    })
+    }
+
+    document.getElementById("btn-submit-checkout")?.addEventListener("click", handleCheckoutRedirect)
+    document.getElementById("btn-submit-checkout-mobile")?.addEventListener("click", handleCheckoutRedirect)
 
     fetchLiveStatus()
     setInterval(fetchLiveStatus, 3000)
