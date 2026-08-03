@@ -79,7 +79,7 @@ const hotspots = carHotspots || [];
         </div>
 
         <!-- Superimposed Brand Logo (Matches 360 floor gray & covers star watermark) -->
-        <div id="brand-watermark-logo" class="absolute z-30 pointer-events-none bg-[#D2D5DA] rounded-xl p-1 shadow-[0_0_15px_8px_#D2D5DA] flex items-center justify-center -translate-x-1/2 -translate-y-1/2 transition-all duration-300">
+        <div id="brand-watermark-logo" class="absolute z-30 pointer-events-none bg-[#D2D5DA] rounded-xl p-1.5 shadow-[0_0_25px_15px_#D2D5DA] flex items-center justify-center -translate-x-1/2 -translate-y-1/2 transition-all duration-300">
           <img 
             src="/logo-valdivia.png" 
             alt="Valdivia Automotores" 
@@ -263,16 +263,16 @@ const hotspots = carHotspots || [];
             const cssX = (cssWidth - cssDrawW) / 2;
             const cssY = (cssHeight - cssDrawH) / 2;
 
-            // star location: X ~ 86.8%, Y ~ 72.5%
-            const targetX = cssX + cssDrawW * 0.868;
-            const targetY = cssY + cssDrawH * 0.725;
+            // star location: X ~ 86%, Y ~ 82% of the rendered car image
+            const targetX = cssX + cssDrawW * 0.86;
+            const targetY = cssY + cssDrawH * 0.82;
 
             watermarkLogo.style.left = `${targetX}px`;
             watermarkLogo.style.top = `${targetY}px`;
 
             if (logoImg) {
-              // Scale the logo height proportionally to the car size (e.g. 9.5% of car height)
-              const computedHeight = Math.max(28, cssDrawH * 0.095);
+              // Scale the logo height proportionally to the car size (~10% of car height)
+              const computedHeight = Math.max(30, cssDrawH * 0.10);
               logoImg.style.height = `${computedHeight}px`;
             }
           }
