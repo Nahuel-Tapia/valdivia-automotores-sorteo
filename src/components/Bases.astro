@@ -1,6 +1,8 @@
 ---
-import { raffle } from "@/data/raffle"
+import { raffle, formatCurrency } from "@/data/raffle"
+import { getTicketPrice } from "@/lib/services/settings"
 
+const ticketUnitPrice = await getTicketPrice()
 const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
   day: "2-digit",
   month: "long",
@@ -8,7 +10,7 @@ const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
 })
 
 const items = [
-  "Organizador: Valdivia Automotores. Valor de cada número: $200.000 (pesos argentinos).",
+  `Organizador: Valdivia Automotores. Valor de cada número: ${formatCurrency(ticketUnitPrice)} (pesos argentinos).`,
   "Participación confirmada tras seleccionar número y acreditarse el pago por Mercado Pago.",
   "Sorteo estimado en 1 mes. Se puede adelantar por venta total o extender hasta máximo 2 meses.",
   "Premio: BYD Dolphin Mini GL 0 km. No canjeable por dinero ni otro bien.",
