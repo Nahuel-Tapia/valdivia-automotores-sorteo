@@ -1,11 +1,19 @@
 ---
 import { raffle } from "@/data/raffle"
+import { getDrawDate } from "@/lib/services/settings"
+
+interface Props {
+  targetDate?: string
+}
+
+const { targetDate } = Astro.props
+const drawDate = targetDate || (await getDrawDate())
 ---
 
 <div
   class="flex flex-wrap items-center justify-center gap-3 sm:gap-4"
   data-countdown
-  data-target={raffle.drawDate}
+  data-target={drawDate}
 >
   {
     [

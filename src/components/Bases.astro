@@ -1,9 +1,10 @@
 ---
 import { raffle, formatCurrency } from "@/data/raffle"
-import { getTicketPrice } from "@/lib/services/settings"
+import { getTicketPrice, getDrawDate } from "@/lib/services/settings"
 
 const ticketUnitPrice = await getTicketPrice()
-const drawDate = new Date(raffle.drawDate).toLocaleDateString("es-AR", {
+const rawDrawDate = await getDrawDate()
+const drawDate = new Date(rawDrawDate).toLocaleDateString("es-AR", {
   day: "2-digit",
   month: "long",
   year: "numeric",

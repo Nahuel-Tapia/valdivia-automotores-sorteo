@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro"
-import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckCircle, Mail, Eye, X, Send, RotateCcw } from "lucide-astro"
+import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckCircle, Mail, Eye, X, Send, RotateCcw, Calendar } from "lucide-astro"
 ---
 
 <Layout title="Panel de Administración | Valdivia Automotores">
@@ -11,6 +11,10 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         <h1 class="mt-1 font-display text-2xl font-800 sm:text-3xl">Administración de Sorteo</h1>
       </div>
       <div class="flex items-center gap-3">
+        <button id="btn-edit-date" class="hidden btn-secondary text-xs py-2 px-3 bg-brand/20 border-brand/30 text-white hover:bg-brand">
+          <Calendar class="h-4 w-4 text-brand-light" />
+          Fecha Sorteo
+        </button>
         <button id="btn-edit-price" class="hidden btn-secondary text-xs py-2 px-3 bg-brand/20 border-brand/30 text-white hover:bg-brand">
           <DollarSign class="h-4 w-4 text-brand-light" />
           Precio Boleto
@@ -285,6 +289,50 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       </form>
     </div>
   </div>
+
+  <!-- Modal para Modificar Fecha del Sorteo -->
+  <div id="date-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-navy/60 backdrop-blur-sm p-4">
+    <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-navy/10 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand">
+            <Calendar class="h-5 w-5" />
+          </span>
+          <div>
+            <h3 class="font-display text-base font-800 text-navy">Editar Fecha del Sorteo</h3>
+            <p class="text-xs text-navy/60">Sincronización del contador de la web</p>
+          </div>
+        </div>
+        <button type="button" id="date-modal-close-btn" class="rounded-lg p-1.5 text-navy/40 hover:bg-cloud hover:text-navy">
+          <X class="h-5 w-5" />
+        </button>
+      </div>
+
+      <form id="form-update-date" class="space-y-4">
+        <div>
+          <label class="block text-xs font-700 text-navy/70 uppercase mb-1">Fecha y Hora del Sorteo</label>
+          <input 
+            type="datetime-local" 
+            id="input-draw-date" 
+            required
+            class="h-11 w-full rounded-xl border border-navy/15 px-3 text-sm font-600 text-navy focus:border-brand focus:outline-none"
+          />
+          <p class="mt-2 text-xs text-navy/50 leading-relaxed">
+            El reloj de la portada principal (contador en vivo) y las bases y condiciones se actualizarán automáticamente a la nueva fecha ingresada.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" id="date-modal-cancel-btn" class="btn-secondary text-xs py-2.5 px-4">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-save-date" class="btn-primary text-xs py-2.5 px-4">
+            Guardar Fecha
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </Layout>
 
 <script>
@@ -302,6 +350,11 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     const priceModal = document.getElementById("price-modal")
     const priceModalCloseBtn = document.getElementById("price-modal-close-btn")
     const priceModalCancelBtn = document.getElementById("price-modal-cancel-btn")
+
+    const editDateBtn = document.getElementById("btn-edit-date")
+    const dateModal = document.getElementById("date-modal")
+    const dateModalCloseBtn = document.getElementById("date-modal-close-btn")
+    const dateModalCancelBtn = document.getElementById("date-modal-cancel-btn")
 
     // Elementos del Modal
     const orderModal = document.getElementById("order-modal")
@@ -324,10 +377,13 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       exportBtn?.classList.add("hidden")
       resetDbBtn?.classList.add("hidden")
       editPriceBtn?.classList.add("hidden")
+      editDateBtn?.classList.add("hidden")
       orderModal?.classList.add("hidden")
       orderModal?.classList.remove("flex")
       priceModal?.classList.add("hidden")
       priceModal?.classList.remove("flex")
+      dateModal?.classList.add("hidden")
+      dateModal?.classList.remove("flex")
     }
 
     // Siempre solicitar credenciales de inicio de sesión al ingresar/recargar la pestaña /admin
@@ -475,6 +531,20 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     priceModalCloseBtn?.addEventListener("click", closePriceModal)
     priceModalCancelBtn?.addEventListener("click", closePriceModal)
 
+    editDateBtn?.addEventListener("click", async () => {
+      await loadSettings()
+      dateModal?.classList.remove("hidden")
+      dateModal?.classList.add("flex")
+    })
+
+    const closeDateModal = () => {
+      dateModal?.classList.add("hidden")
+      dateModal?.classList.remove("flex")
+    }
+
+    dateModalCloseBtn?.addEventListener("click", closeDateModal)
+    dateModalCancelBtn?.addEventListener("click", closeDateModal)
+
     async function showDashboard() {
       const currentToken = getAdminToken()
       if (!currentToken) {
@@ -485,6 +555,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       loginSec?.classList.add("hidden")
       dashSec?.classList.remove("hidden")
       editPriceBtn?.classList.remove("hidden")
+      editDateBtn?.classList.remove("hidden")
       logoutBtn?.classList.remove("hidden")
       exportBtn?.classList.remove("hidden")
       resetDbBtn?.classList.remove("hidden")
@@ -524,12 +595,24 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
           headers: { Authorization: `Bearer ${currentToken}` },
         })
         const data = await res.json()
-        if (data.success && data.ticketPrice) {
-          const input = document.getElementById("input-ticket-price") as HTMLInputElement | null
-          if (input) input.value = String(data.ticketPrice)
+        if (data.success) {
+          if (data.ticketPrice) {
+            const inputPrice = document.getElementById("input-ticket-price") as HTMLInputElement | null
+            if (inputPrice) inputPrice.value = String(data.ticketPrice)
+          }
+          if (data.drawDate) {
+            const inputDate = document.getElementById("input-draw-date") as HTMLInputElement | null
+            if (inputDate) {
+              const d = new Date(data.drawDate)
+              if (!isNaN(d.getTime())) {
+                const pad = (n: number) => String(n).padStart(2, "0")
+                inputDate.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+              }
+            }
+          }
         }
       } catch (err) {
-        console.error("Error cargando precio de ticket:", err)
+        console.error("Error cargando configuraciones de admin:", err)
       }
     }
 
@@ -564,6 +647,42 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         }
       } catch {
         alert("Error de conexión al actualizar el precio.")
+      }
+    })
+
+    const dateForm = document.getElementById("form-update-date") as HTMLFormElement | null
+    dateForm?.addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const currentToken = getAdminToken()
+      const dateInput = document.getElementById("input-draw-date") as HTMLInputElement | null
+      const rawVal = dateInput?.value
+
+      if (!rawVal) {
+        alert("Por favor elegí una fecha y hora válidas.")
+        return
+      }
+
+      const isoDate = new Date(rawVal).toISOString()
+
+      try {
+        const res = await fetch("/api/admin/settings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentToken}`,
+          },
+          body: JSON.stringify({ drawDate: isoDate }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          alert(`✨ ${data.message}`)
+          closeDateModal()
+          showDashboard()
+        } else {
+          alert(`❌ ${data.error || "No se pudo actualizar la fecha del sorteo."}`)
+        }
+      } catch {
+        alert("Error de conexión al actualizar la fecha del sorteo.")
       }
     })
 

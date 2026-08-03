@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
 import { verifyAdminRequest } from "@/lib/services/auth"
-import { getTicketPrice, setTicketPrice } from "@/lib/services/settings"
+import { getTicketPrice, setTicketPrice, getDrawDate, setDrawDate } from "@/lib/services/settings"
 
 export const prerender = false
 
@@ -14,8 +14,9 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     const price = await getTicketPrice()
+    const drawDate = await getDrawDate()
     return new Response(
-      JSON.stringify({ success: true, ticketPrice: price }),
+      JSON.stringify({ success: true, ticketPrice: price, drawDate }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     )
   } catch (error) {
@@ -37,29 +38,38 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const body = await request.json()
-    const { ticketPrice } = body
-    const priceNum = Number(ticketPrice)
+    const { ticketPrice, drawDate } = body
 
-    if (isNaN(priceNum) || priceNum <= 0) {
-      return new Response(
-        JSON.stringify({ error: "El precio debe ser un número válido mayor a 0." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      )
+    if (ticketPrice !== undefined) {
+      const priceNum = Number(ticketPrice)
+      if (isNaN(priceNum) || priceNum <= 0) {
+        return new Response(
+          JSON.stringify({ error: "El precio debe ser un número válido mayor a 0." }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        )
+      }
+      await setTicketPrice(priceNum)
     }
 
-    const saved = await setTicketPrice(priceNum)
-    if (!saved) {
-      return new Response(
-        JSON.stringify({ error: "No se pudo guardar el precio en la base de datos." }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      )
+    if (drawDate !== undefined) {
+      if (!drawDate || isNaN(Date.parse(drawDate))) {
+        return new Response(
+          JSON.stringify({ error: "La fecha del sorteo ingresada no es válida." }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        )
+      }
+      await setDrawDate(drawDate)
     }
+
+    const updatedPrice = await getTicketPrice()
+    const updatedDate = await getDrawDate()
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Precio de boleto actualizado exitosamente.",
-        ticketPrice: priceNum,
+        message: "Configuraciones actualizadas exitosamente.",
+        ticketPrice: updatedPrice,
+        drawDate: updatedDate,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     )

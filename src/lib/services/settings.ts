@@ -49,3 +49,12 @@ export async function setTicketPrice(price: number): Promise<boolean> {
   if (price <= 0) return false
   return await setSetting("ticket_price", String(price))
 }
+
+export async function getDrawDate(): Promise<string> {
+  return await getSetting("draw_date", raffle.drawDate)
+}
+
+export async function setDrawDate(dateStr: string): Promise<boolean> {
+  if (!dateStr || isNaN(Date.parse(dateStr))) return false
+  return await setSetting("draw_date", dateStr)
+}
