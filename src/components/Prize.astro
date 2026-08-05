@@ -1,6 +1,6 @@
 ---
 import { raffle } from "@/data/raffle"
-import { Zap, Gauge, Battery, ShieldCheck, Bluetooth, Tv, Award, Sparkles, Image as ImageIcon } from "lucide-astro"
+import { Zap, Gauge, Battery, ShieldCheck, Bluetooth, Tv, Award, Sparkles, Image as ImageIcon, X, Ticket } from "lucide-astro"
 
 const carIcons = [Zap, Battery, Gauge, ShieldCheck]
 const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
@@ -110,12 +110,22 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
             })
           }
         </dl>
+
+        <div class="mt-8">
+          <button
+            type="button"
+            id="btn-open-moto-modal-inline"
+            class="btn-electric transform hover:scale-105 transition-all duration-300 text-sm"
+          >
+            <Sparkles class="h-4 w-4" />
+            Ver Ficha Técnica Completa
+          </button>
+        </div>
       </div>
 
       <!-- Right Column: Interactive Image Gallery -->
       <div class="space-y-4">
         <div class="relative overflow-hidden rounded-3xl border border-white/15 bg-white/5 p-6 sm:p-8 backdrop-blur-xl shadow-glow-sm flex items-center justify-center group min-h-[340px]">
-          <!-- Studio center radial spotlight -->
           <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(0,212,255,0.2)_0%,transparent_75%)]"></div>
           <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-electric/20 rounded-[100%] blur-xl pointer-events-none"></div>
 
@@ -124,7 +134,7 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
             id="moto-main-img"
             src={raffle.secondPrize.image}
             alt={raffle.secondPrize.name}
-            class="w-full h-auto max-h-[340px] object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.6)] group-hover:scale-[1.03] transition-all duration-500"
+            class="w-full h-auto max-h-[340px] object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.6)] group-hover:scale-[1.03] transition-all duration-500 cursor-pointer"
           />
         </div>
 
@@ -162,11 +172,143 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
   </div>
 </section>
 
+<!-- MODAL POPUP: DETALLES COMPLETOS BIKER MOTO -->
+<div
+  id="moto-details-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-navy/80 backdrop-blur-md p-4 overflow-y-auto"
+>
+  <div class="relative w-full max-w-4xl rounded-3xl border border-white/20 bg-navy-dark p-6 sm:p-8 shadow-2xl text-white my-8 space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-white/10 pb-4">
+      <div class="flex items-center gap-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-electric/20 text-electric border border-electric/30">
+          🛵
+        </span>
+        <div>
+          <span class="text-xs font-extrabold uppercase tracking-widest text-electric">2º Premio Oficial</span>
+          <h3 class="font-display text-xl font-extrabold sm:text-2xl">{raffle.secondPrize.name}</h3>
+        </div>
+      </div>
+      <button
+        type="button"
+        id="moto-modal-close-btn"
+        class="rounded-xl bg-white/10 p-2 text-white/70 hover:bg-white/20 hover:text-white transition"
+      >
+        <X class="h-6 w-6" />
+      </button>
+    </div>
+
+    <!-- Body Grid -->
+    <div class="grid gap-8 lg:grid-cols-2 items-center">
+      <!-- Modal Left: Interactive Preview Image -->
+      <div class="space-y-4">
+        <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-center min-h-[300px]">
+          <img
+            id="modal-moto-img"
+            src={raffle.secondPrize.image}
+            alt="Detalle Biker Moto"
+            class="w-full h-auto max-h-[380px] object-contain drop-shadow-xl"
+          />
+        </div>
+        <!-- Modal Thumbnails -->
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            data-src={raffle.secondPrize.image}
+            class="modal-thumb-btn active rounded-lg border border-electric bg-electric/20 px-3 py-1.5 text-xs font-bold text-white"
+          >
+            Estudio
+          </button>
+          <button
+            type="button"
+            data-src={raffle.secondPrize.riderImage}
+            class="modal-thumb-btn rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/70 hover:text-white"
+          >
+            Urbana
+          </button>
+          <button
+            type="button"
+            data-src={raffle.secondPrize.specsImage}
+            class="modal-thumb-btn rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/70 hover:text-white"
+          >
+            Ficha Técnica Gráfica
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Right: Specs List -->
+      <div class="space-y-6">
+        <div>
+          <h4 class="font-display text-lg font-bold text-white">Especificaciones Técnicas completas</h4>
+          <p class="text-xs text-white/70 mt-1 leading-relaxed">
+            Moto 100% eléctrica diseñada para el uso diario urbano con máximo confort, ahorro y conectividad.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+            <span class="text-xs text-electric font-semibold block uppercase">Potencia Motor</span>
+            <strong class="text-base text-white">499 W</strong>
+          </div>
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+            <span class="text-xs text-electric font-semibold block uppercase">Batería</span>
+            <strong class="text-base text-white">48V 20Ah Plomo-Ácido</strong>
+          </div>
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+            <span class="text-xs text-electric font-semibold block uppercase">Velocidad Máxima</span>
+            <strong class="text-base text-white">29 km/h (3 vel.)</strong>
+          </div>
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+            <span class="text-xs text-electric font-semibold block uppercase">Tablero</span>
+            <strong class="text-base text-white">Instrumento LCD Digital</strong>
+          </div>
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+            <span class="text-xs text-electric font-semibold block uppercase">Sonido</span>
+            <strong class="text-base text-white">Altavoz Bluetooth</strong>
+          </div>
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+            <span class="text-xs text-electric font-semibold block uppercase">Controlador</span>
+            <strong class="text-base text-white">6 + Tubos</strong>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-electric/10 border border-electric/30 p-3.5 text-xs text-white/80 leading-relaxed">
+          💡 <strong>Equipamiento completo:</strong> Faro delantero de alta potencia LED, luces traseras, canasto frontal reforzado, asiento trasero con respaldo acolchado y pedales de auxilio.
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="button"
+            id="modal-moto-close-bottom"
+            class="btn-secondary text-xs py-2.5 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            Cerrar
+          </button>
+          <a
+            href="/participar"
+            class="btn-electric text-xs py-2.5 px-5"
+          >
+            <Ticket class="h-4 w-4" />
+            Comprar Boletos
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-  function initMotoGallery() {
+  function initMotoGalleryAndModal() {
     const mainImg = document.getElementById("moto-main-img") as HTMLImageElement | null
     const thumbBtns = document.querySelectorAll<HTMLButtonElement>(".moto-thumb-btn")
+    const modal = document.getElementById("moto-details-modal")
+    const modalCloseBtn = document.getElementById("moto-modal-close-btn")
+    const modalCloseBottom = document.getElementById("modal-moto-close-bottom")
+    const modalImg = document.getElementById("modal-moto-img") as HTMLImageElement | null
+    const modalThumbs = document.querySelectorAll<HTMLButtonElement>(".modal-thumb-btn")
+    const inlineOpenBtn = document.getElementById("btn-open-moto-modal-inline")
 
+    // Inline Thumbnails
     thumbBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
         const src = btn.getAttribute("data-target-src")
@@ -186,8 +328,59 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
         }
       })
     })
+
+    // Open Modal
+    const openModal = () => {
+      if (modal) {
+        modal.classList.remove("hidden")
+        modal.classList.add("flex")
+      }
+    }
+
+    const closeModal = () => {
+      if (modal) {
+        modal.classList.add("hidden")
+        modal.classList.remove("flex")
+      }
+    }
+
+    inlineOpenBtn?.addEventListener("click", openModal)
+    mainImg?.addEventListener("click", openModal)
+    modalCloseBtn?.addEventListener("click", closeModal)
+    modalCloseBottom?.addEventListener("click", closeModal)
+
+    modal?.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal()
+    })
+
+    // Global listener for hero button
+    const heroBtn = document.getElementById("btn-hero-view-moto")
+    heroBtn?.addEventListener("click", (e) => {
+      e.preventDefault()
+      openModal()
+      const target = document.getElementById("premio-moto")
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" })
+      }
+    })
+
+    // Modal Thumbnails
+    modalThumbs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const src = btn.getAttribute("data-src")
+        if (modalImg && src) {
+          modalImg.src = src
+          modalThumbs.forEach((b) => {
+            b.classList.remove("border-electric", "bg-electric/20", "text-white")
+            b.classList.add("border-white/10", "bg-white/5", "text-white/70")
+          })
+          btn.classList.remove("border-white/10", "bg-white/5", "text-white/70")
+          btn.classList.add("border-electric", "bg-electric/20", "text-white")
+        }
+      })
+    })
   }
 
-  initMotoGallery()
-  document.addEventListener("astro:after-swap", initMotoGallery)
+  initMotoGalleryAndModal()
+  document.addEventListener("astro:after-swap", initMotoGalleryAndModal)
 </script>

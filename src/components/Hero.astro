@@ -143,10 +143,15 @@ const ticketUnitPrice = await getTicketPrice()
   function initHeroMotoScroll() {
     const motoBtn = document.getElementById("btn-hero-view-moto")
     motoBtn?.addEventListener("click", (e) => {
+      const modal = document.getElementById("moto-details-modal")
       const target = document.getElementById("premio-moto")
-      if (target) {
+      if (modal) {
         e.preventDefault()
-        target.scrollIntoView({ behavior: "smooth", block: "start" })
+        modal.classList.remove("hidden")
+        modal.classList.add("flex")
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" })
+        }
       }
     })
   }
