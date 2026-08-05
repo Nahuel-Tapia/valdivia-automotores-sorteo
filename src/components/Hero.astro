@@ -107,7 +107,7 @@ const ticketUnitPrice = await getTicketPrice()
         </div>
 
         <!-- 2nd Prize Banner Card -->
-        <a href="#premio-moto" class="group flex items-center justify-between gap-4 rounded-2xl border border-electric/30 bg-gradient-to-r from-electric/15 via-navy-dark/90 to-navy-dark p-3.5 shadow-glow-sm hover:border-electric/60 transition-all duration-300">
+        <a id="btn-hero-view-moto" href="/#premio-moto" class="group flex items-center justify-between gap-4 rounded-2xl border border-electric/30 bg-gradient-to-r from-electric/15 via-navy-dark/90 to-navy-dark p-3.5 shadow-glow-sm hover:border-electric/60 transition-all duration-300">
           <div class="flex items-center gap-3">
             <div class="h-12 w-12 flex-shrink-0 rounded-xl bg-navy-dark/80 border border-white/10 p-1 flex items-center justify-center overflow-hidden">
               <img src={raffle.secondPrize.image} alt="2º Premio Moto Biker" class="h-full w-auto object-contain group-hover:scale-110 transition-transform duration-300" />
@@ -138,3 +138,19 @@ const ticketUnitPrice = await getTicketPrice()
 
   <div class="h-6 lg:h-2"></div>
 </section>
+
+<script>
+  function initHeroMotoScroll() {
+    const motoBtn = document.getElementById("btn-hero-view-moto")
+    motoBtn?.addEventListener("click", (e) => {
+      const target = document.getElementById("premio-moto")
+      if (target) {
+        e.preventDefault()
+        target.scrollIntoView({ behavior: "smooth", block: "start" })
+      }
+    })
+  }
+
+  initHeroMotoScroll()
+  document.addEventListener("astro:after-swap", initHeroMotoScroll)
+</script>
