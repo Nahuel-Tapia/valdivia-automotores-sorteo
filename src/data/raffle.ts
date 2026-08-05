@@ -31,7 +31,7 @@ export const raffle = {
     { label: "Versión", value: "GL 0 km" },
   ] as PrizeSpec[],
   secondPrize: {
-    name: "BIKER MOTO",
+    name: "BIKE MOTO",
     tagline: "Moto 100% Eléctrica",
     badge: "2º PREMIO",
     image: "/prizes/moto.jpg",
