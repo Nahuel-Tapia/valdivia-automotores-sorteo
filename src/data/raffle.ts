@@ -34,9 +34,9 @@ export const raffle = {
     name: "BIKER MOTO",
     tagline: "Moto 100% Eléctrica",
     badge: "2º PREMIO",
-    image: "/prizes/moto-biker.png",
-    riderImage: "/prizes/moto-biker-rider.png",
-    specsImage: "/prizes/moto-biker-specs.png",
+    image: "/prizes/moto.jpg",
+    riderImage: "/prizes/moto.jpg",
+    specsImage: "/prizes/moto.jpg",
     specs: [
       { label: "Potencia", value: "499 W" },
       { label: "Batería", value: "48V 20Ah Plomo-Ácido" },

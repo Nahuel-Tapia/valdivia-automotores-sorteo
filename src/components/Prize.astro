@@ -1,6 +1,6 @@
 ---
 import { raffle } from "@/data/raffle"
-import { Zap, Gauge, Battery, ShieldCheck, Bluetooth, Tv, Award, Sparkles, Image as ImageIcon, X, Ticket } from "lucide-astro"
+import { Zap, Gauge, Battery, ShieldCheck, Bluetooth, Tv, Award, Sparkles, X, Ticket } from "lucide-astro"
 
 const carIcons = [Zap, Battery, Gauge, ShieldCheck]
 const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
@@ -123,49 +123,19 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
         </div>
       </div>
 
-      <!-- Right Column: Interactive Image Gallery -->
-      <div class="space-y-4">
+      <!-- Right Column: Single High-Res Moto Image -->
+      <div>
         <div class="relative overflow-hidden rounded-3xl border border-white/15 bg-white/5 p-6 sm:p-8 backdrop-blur-xl shadow-glow-sm flex items-center justify-center group min-h-[340px]">
           <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(0,212,255,0.2)_0%,transparent_75%)]"></div>
           <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-electric/20 rounded-[100%] blur-xl pointer-events-none"></div>
 
-          <!-- Main Image -->
+          <!-- Main Image: moto.jpg -->
           <img
             id="moto-main-img"
-            src={raffle.secondPrize.image}
+            src="/prizes/moto.jpg"
             alt={raffle.secondPrize.name}
-            class="w-full h-auto max-h-[340px] object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.6)] group-hover:scale-[1.03] transition-all duration-500 cursor-pointer"
+            class="w-full h-auto max-h-[360px] object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.6)] group-hover:scale-[1.03] transition-all duration-500 cursor-pointer"
           />
-        </div>
-
-        <!-- Thumbnails Selector Bar -->
-        <div class="flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            data-target-src={raffle.secondPrize.image}
-            class="moto-thumb-btn active flex items-center gap-2 rounded-xl border border-electric bg-electric/20 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-electric/30"
-          >
-            <ImageIcon class="h-4 w-4 text-electric" />
-            <span>Estudio</span>
-          </button>
-
-          <button
-            type="button"
-            data-target-src={raffle.secondPrize.riderImage}
-            class="moto-thumb-btn flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-bold text-white/70 transition hover:border-white/30 hover:text-white"
-          >
-            <ImageIcon class="h-4 w-4 text-electric" />
-            <span>Urbana</span>
-          </button>
-
-          <button
-            type="button"
-            data-target-src={raffle.secondPrize.specsImage}
-            class="moto-thumb-btn flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-bold text-white/70 transition hover:border-white/30 hover:text-white"
-          >
-            <ImageIcon class="h-4 w-4 text-electric" />
-            <span>Ficha Técnica Gráfica</span>
-          </button>
         </div>
       </div>
     </div>
@@ -200,40 +170,14 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
 
     <!-- Body Grid -->
     <div class="grid gap-8 lg:grid-cols-2 items-center">
-      <!-- Modal Left: Interactive Preview Image -->
-      <div class="space-y-4">
-        <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-center min-h-[300px]">
-          <img
-            id="modal-moto-img"
-            src={raffle.secondPrize.image}
-            alt="Detalle Biker Moto"
-            class="w-full h-auto max-h-[380px] object-contain drop-shadow-xl"
-          />
-        </div>
-        <!-- Modal Thumbnails -->
-        <div class="flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            data-src={raffle.secondPrize.image}
-            class="modal-thumb-btn active rounded-lg border border-electric bg-electric/20 px-3 py-1.5 text-xs font-bold text-white"
-          >
-            Estudio
-          </button>
-          <button
-            type="button"
-            data-src={raffle.secondPrize.riderImage}
-            class="modal-thumb-btn rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/70 hover:text-white"
-          >
-            Urbana
-          </button>
-          <button
-            type="button"
-            data-src={raffle.secondPrize.specsImage}
-            class="modal-thumb-btn rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/70 hover:text-white"
-          >
-            Ficha Técnica Gráfica
-          </button>
-        </div>
+      <!-- Modal Left: Moto Image -->
+      <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-center min-h-[300px]">
+        <img
+          id="modal-moto-img"
+          src="/prizes/moto.jpg"
+          alt="Detalle Biker Moto"
+          class="w-full h-auto max-h-[380px] object-contain drop-shadow-xl"
+        />
       </div>
 
       <!-- Modal Right: Specs List -->
@@ -298,38 +242,13 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
 </div>
 
 <script>
-  function initMotoGalleryAndModal() {
-    const mainImg = document.getElementById("moto-main-img") as HTMLImageElement | null
-    const thumbBtns = document.querySelectorAll<HTMLButtonElement>(".moto-thumb-btn")
+  function initMotoModal() {
+    const mainImg = document.getElementById("moto-main-img")
     const modal = document.getElementById("moto-details-modal")
     const modalCloseBtn = document.getElementById("moto-modal-close-btn")
     const modalCloseBottom = document.getElementById("modal-moto-close-bottom")
-    const modalImg = document.getElementById("modal-moto-img") as HTMLImageElement | null
-    const modalThumbs = document.querySelectorAll<HTMLButtonElement>(".modal-thumb-btn")
     const inlineOpenBtn = document.getElementById("btn-open-moto-modal-inline")
 
-    // Inline Thumbnails
-    thumbBtns.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const src = btn.getAttribute("data-target-src")
-        if (mainImg && src) {
-          mainImg.style.opacity = "0"
-          setTimeout(() => {
-            mainImg.src = src
-            mainImg.style.opacity = "1"
-          }, 150)
-
-          thumbBtns.forEach((b) => {
-            b.classList.remove("border-electric", "bg-electric/20", "text-white")
-            b.classList.add("border-white/10", "bg-white/5", "text-white/70")
-          })
-          btn.classList.remove("border-white/10", "bg-white/5", "text-white/70")
-          btn.classList.add("border-electric", "bg-electric/20", "text-white")
-        }
-      })
-    })
-
-    // Open Modal
     const openModal = () => {
       if (modal) {
         modal.classList.remove("hidden")
@@ -352,35 +271,8 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
     modal?.addEventListener("click", (e) => {
       if (e.target === modal) closeModal()
     })
-
-    // Global listener for hero button
-    const heroBtn = document.getElementById("btn-hero-view-moto")
-    heroBtn?.addEventListener("click", (e) => {
-      e.preventDefault()
-      openModal()
-      const target = document.getElementById("premio-moto")
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "start" })
-      }
-    })
-
-    // Modal Thumbnails
-    modalThumbs.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const src = btn.getAttribute("data-src")
-        if (modalImg && src) {
-          modalImg.src = src
-          modalThumbs.forEach((b) => {
-            b.classList.remove("border-electric", "bg-electric/20", "text-white")
-            b.classList.add("border-white/10", "bg-white/5", "text-white/70")
-          })
-          btn.classList.remove("border-white/10", "bg-white/5", "text-white/70")
-          btn.classList.add("border-electric", "bg-electric/20", "text-white")
-        }
-      })
-    })
   }
 
-  initMotoGalleryAndModal()
-  document.addEventListener("astro:after-swap", initMotoGalleryAndModal)
+  initMotoModal()
+  document.addEventListener("astro:after-swap", initMotoModal)
 </script>
