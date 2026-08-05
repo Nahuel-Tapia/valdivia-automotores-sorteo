@@ -1,6 +1,6 @@
 ---
 import { raffle } from "@/data/raffle"
-import { Zap, Gauge, Battery, ShieldCheck, Bluetooth, Tv, Award, Sparkles, X, Ticket } from "lucide-astro"
+import { Zap, Gauge, Battery, ShieldCheck, Bluetooth, Tv, Award, Sparkles } from "lucide-astro"
 
 const carIcons = [Zap, Battery, Gauge, ShieldCheck]
 const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
@@ -110,17 +110,6 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
             })
           }
         </dl>
-
-        <div class="mt-8">
-          <button
-            type="button"
-            id="btn-open-moto-modal-inline"
-            class="btn-electric transform hover:scale-105 transition-all duration-300 text-sm"
-          >
-            <Sparkles class="h-4 w-4" />
-            Ver Ficha Técnica Completa
-          </button>
-        </div>
       </div>
 
       <!-- Right Column: Single High-Res Moto Image -->
@@ -134,145 +123,10 @@ const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
             id="moto-main-img"
             src="/prizes/moto.jpg"
             alt={raffle.secondPrize.name}
-            class="w-full h-auto max-h-[360px] object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.6)] group-hover:scale-[1.03] transition-all duration-500 cursor-pointer"
+            class="w-full h-auto max-h-[360px] object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.6)] group-hover:scale-[1.03] transition-all duration-500"
           />
         </div>
       </div>
     </div>
   </div>
 </section>
-
-<!-- MODAL POPUP: DETALLES COMPLETOS BIKER MOTO -->
-<div
-  id="moto-details-modal"
-  class="fixed inset-0 z-50 hidden items-center justify-center bg-navy/80 backdrop-blur-md p-4 overflow-y-auto"
->
-  <div class="relative w-full max-w-4xl rounded-3xl border border-white/20 bg-navy-dark p-6 sm:p-8 shadow-2xl text-white my-8 space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-white/10 pb-4">
-      <div class="flex items-center gap-3">
-        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-electric/20 text-electric border border-electric/30">
-          🛵
-        </span>
-        <div>
-          <span class="text-xs font-extrabold uppercase tracking-widest text-electric">2º Premio Oficial</span>
-          <h3 class="font-display text-xl font-extrabold sm:text-2xl">{raffle.secondPrize.name}</h3>
-        </div>
-      </div>
-      <button
-        type="button"
-        id="moto-modal-close-btn"
-        class="rounded-xl bg-white/10 p-2 text-white/70 hover:bg-white/20 hover:text-white transition"
-      >
-        <X class="h-6 w-6" />
-      </button>
-    </div>
-
-    <!-- Body Grid -->
-    <div class="grid gap-8 lg:grid-cols-2 items-center">
-      <!-- Modal Left: Moto Image -->
-      <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-center min-h-[300px]">
-        <img
-          id="modal-moto-img"
-          src="/prizes/moto.jpg"
-          alt="Detalle Biker Moto"
-          class="w-full h-auto max-h-[380px] object-contain drop-shadow-xl"
-        />
-      </div>
-
-      <!-- Modal Right: Specs List -->
-      <div class="space-y-6">
-        <div>
-          <h4 class="font-display text-lg font-bold text-white">Especificaciones Técnicas completas</h4>
-          <p class="text-xs text-white/70 mt-1 leading-relaxed">
-            Moto 100% eléctrica diseñada para el uso diario urbano con máximo confort, ahorro y conectividad.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
-            <span class="text-xs text-electric font-semibold block uppercase">Potencia Motor</span>
-            <strong class="text-base text-white">499 W</strong>
-          </div>
-          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
-            <span class="text-xs text-electric font-semibold block uppercase">Batería</span>
-            <strong class="text-base text-white">48V 20Ah Plomo-Ácido</strong>
-          </div>
-          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
-            <span class="text-xs text-electric font-semibold block uppercase">Velocidad Máxima</span>
-            <strong class="text-base text-white">29 km/h (3 vel.)</strong>
-          </div>
-          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
-            <span class="text-xs text-electric font-semibold block uppercase">Tablero</span>
-            <strong class="text-base text-white">Instrumento LCD Digital</strong>
-          </div>
-          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
-            <span class="text-xs text-electric font-semibold block uppercase">Sonido</span>
-            <strong class="text-base text-white">Altavoz Bluetooth</strong>
-          </div>
-          <div class="rounded-xl bg-white/5 border border-white/10 p-3">
-            <span class="text-xs text-electric font-semibold block uppercase">Controlador</span>
-            <strong class="text-base text-white">6 + Tubos</strong>
-          </div>
-        </div>
-
-        <div class="rounded-xl bg-electric/10 border border-electric/30 p-3.5 text-xs text-white/80 leading-relaxed">
-          💡 <strong>Equipamiento completo:</strong> Faro delantero de alta potencia LED, luces traseras, canasto frontal reforzado, asiento trasero con respaldo acolchado y pedales de auxilio.
-        </div>
-
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <button
-            type="button"
-            id="modal-moto-close-bottom"
-            class="btn-secondary text-xs py-2.5 px-4 bg-white/10 border-white/20 text-white hover:bg-white/20"
-          >
-            Cerrar
-          </button>
-          <a
-            href="/participar"
-            class="btn-electric text-xs py-2.5 px-5"
-          >
-            <Ticket class="h-4 w-4" />
-            Comprar Boletos
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  function initMotoModal() {
-    const mainImg = document.getElementById("moto-main-img")
-    const modal = document.getElementById("moto-details-modal")
-    const modalCloseBtn = document.getElementById("moto-modal-close-btn")
-    const modalCloseBottom = document.getElementById("modal-moto-close-bottom")
-    const inlineOpenBtn = document.getElementById("btn-open-moto-modal-inline")
-
-    const openModal = () => {
-      if (modal) {
-        modal.classList.remove("hidden")
-        modal.classList.add("flex")
-      }
-    }
-
-    const closeModal = () => {
-      if (modal) {
-        modal.classList.add("hidden")
-        modal.classList.remove("flex")
-      }
-    }
-
-    inlineOpenBtn?.addEventListener("click", openModal)
-    mainImg?.addEventListener("click", openModal)
-    modalCloseBtn?.addEventListener("click", closeModal)
-    modalCloseBottom?.addEventListener("click", closeModal)
-
-    modal?.addEventListener("click", (e) => {
-      if (e.target === modal) closeModal()
-    })
-  }
-
-  initMotoModal()
-  document.addEventListener("astro:after-swap", initMotoModal)
-</script>
