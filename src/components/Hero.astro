@@ -23,18 +23,18 @@ const ticketUnitPrice = await getTicketPrice()
       <span
         class="inline-flex items-center gap-2 rounded-full border border-electric/40 bg-electric/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-electric backdrop-blur-md shadow-glow-sm"
       >
-        <Zap class="h-3.5 w-3.5 animate-pulse" />
-        100% Eléctrico · {raffle.drawChannel}
+        <Sparkles class="h-3.5 w-3.5 text-electric animate-pulse" />
+        🏆 2 GRANDES PREMIOS · {raffle.drawChannel}
       </span>
 
       <h1 class="mt-6 font-display text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
         Ganá un<br />
         <span class="text-gradient-electric drop-shadow-sm">BYD Dolphin Mini</span><br />
-        <span class="text-white">0km {raffle.prizeYear}</span>
+        <span class="text-white">0km + Moto Biker</span>
       </h1>
 
       <p class="mt-6 max-w-lg text-lg leading-relaxed text-white/80 text-pretty">
-        Participá del gran sorteo de <strong class="text-white font-semibold">{raffle.brand}</strong>. Tu próximo auto eléctrico te espera. Comprá tus números online y pagá seguro con Mercado Pago.
+        Participá del gran sorteo de <strong class="text-white font-semibold">{raffle.brand}</strong>. Con tu número participás por el <strong class="text-electric font-semibold">1º Premio (BYD Dolphin Mini 0km)</strong> y el <strong class="text-electric font-semibold">2º Premio (Moto BIKER Eléctrica)</strong>.
       </p>
 
       <div class="mt-8 flex flex-wrap items-center gap-4">
@@ -105,6 +105,22 @@ const ticketUnitPrice = await getTicketPrice()
             </span>
           </div>
         </div>
+
+        <!-- 2nd Prize Banner Card -->
+        <a href="#premio-moto" class="group flex items-center justify-between gap-4 rounded-2xl border border-electric/30 bg-gradient-to-r from-electric/15 via-navy-dark/90 to-navy-dark p-3.5 shadow-glow-sm hover:border-electric/60 transition-all duration-300">
+          <div class="flex items-center gap-3">
+            <div class="h-12 w-12 flex-shrink-0 rounded-xl bg-navy-dark/80 border border-white/10 p-1 flex items-center justify-center overflow-hidden">
+              <img src={raffle.secondPrize.image} alt="2º Premio Moto Biker" class="h-full w-auto object-contain group-hover:scale-110 transition-transform duration-300" />
+            </div>
+            <div>
+              <span class="text-[10px] font-extrabold uppercase tracking-widest text-electric">2º Premio Incluido</span>
+              <h3 class="font-display text-sm font-bold text-white flex items-center gap-1.5">
+                {raffle.secondPrize.name} <span class="text-xs text-white/60 font-normal">({raffle.secondPrize.tagline})</span>
+              </h3>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-electric group-hover:translate-x-1 transition-transform">Ver detalles →</span>
+        </a>
 
         <!-- Countdown Timer Card -->
         <div class="rounded-2xl border border-white/15 bg-navy-dark/95 p-4 shadow-card backdrop-blur-md">

@@ -30,6 +30,22 @@ export const raffle = {
     { label: "Carga Rápida", value: "30 min (30-80%)" },
     { label: "Versión", value: "GL 0 km" },
   ] as PrizeSpec[],
+  secondPrize: {
+    name: "BIKER MOTO",
+    tagline: "Moto 100% Eléctrica",
+    badge: "2º PREMIO",
+    image: "/prizes/moto-biker.png",
+    riderImage: "/prizes/moto-biker-rider.png",
+    specsImage: "/prizes/moto-biker-specs.png",
+    specs: [
+      { label: "Potencia", value: "499 W" },
+      { label: "Batería", value: "48V 20Ah Plomo-Ácido" },
+      { label: "Velocidad Máx", value: "29 km/h (3 vel.)" },
+      { label: "Tablero", value: "Instrumento LCD Digital" },
+      { label: "Conectividad", value: "Altavoz Bluetooth" },
+      { label: "Controlador", value: "6 + Tubos" },
+    ] as PrizeSpec[],
+  },
   carColors: [
     { id: "green", name: "Verde Lima", hex: "#C8D626", image: "/cars/portada-clean.png", video: "/videos/360_verde.mp4" },
     { id: "white", name: "Blanco Perla", hex: "#F5F0E8", image: "/cars/dolphin-white.png", video: "/videos/360_blanco.mp4" },

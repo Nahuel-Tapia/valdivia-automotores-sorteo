@@ -1,58 +1,193 @@
 ---
 import { raffle } from "@/data/raffle"
-import { Zap, Gauge, Battery, ShieldCheck } from "lucide-astro"
+import { Zap, Gauge, Battery, ShieldCheck, Bluetooth, Tv, Award, Sparkles, Image as ImageIcon } from "lucide-astro"
 
-const icons = [Zap, Battery, Gauge, ShieldCheck]
+const carIcons = [Zap, Battery, Gauge, ShieldCheck]
+const motoIcons = [Zap, Battery, Gauge, Tv, Bluetooth, Award]
 ---
 
-<section id="premio" class="container-app scroll-mt-20 py-14">
-  <div class="grid items-center gap-10 lg:grid-cols-2">
-    <div class="order-2 lg:order-1">
-      <span class="text-sm font-semibold uppercase tracking-[0.16em] text-brand">El premio</span>
-      <h2 class="mt-3 font-display text-3xl font-800 text-navy text-balance sm:text-4xl">
-        Un {raffle.prizeName} 0km, listo para vos
-      </h2>
-      <p class="mt-4 max-w-lg text-base leading-relaxed text-navy/70 text-pretty">
-        100% eléctrico, patentado y con todos los gastos incluidos. Solo tenés que elegir tus números de la suerte y esperar el sorteo.
-      </p>
+<section id="premio" class="container-app scroll-mt-20 py-16 space-y-16">
+  <!-- Section Title -->
+  <div class="text-center max-w-2xl mx-auto space-y-3">
+    <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-brand/10 text-brand text-xs font-bold uppercase tracking-widest">
+      <Sparkles class="w-4 h-4" />
+      Grandes Premios del Sorteo
+    </span>
+    <h2 class="font-display text-3xl font-extrabold text-navy sm:text-4xl">
+      2 Premios Increíbles con tu Mismo Boleto
+    </h2>
+    <p class="text-base text-navy/70 leading-relaxed">
+      Cada número adquirido te otorga doble oportunidad de ganar: participás por el auto 0km y por la moto 100% eléctrica.
+    </p>
+  </div>
 
-      <dl class="mt-8 grid grid-cols-2 gap-4">
-        {
-          raffle.prizeSpecs.map((spec, i) => {
-            const Icon = icons[i % icons.length]
-            return (
-              <div class="card flex items-start gap-3 p-4">
-                <span class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-brand/10 text-brand">
-                  <Icon class="h-5 w-5" />
-                </span>
-                <div>
-                  <dt class="text-xs font-semibold uppercase tracking-wide text-navy/50">{spec.label}</dt>
-                  <dd class="mt-0.5 font-display text-sm font-700 text-navy">{spec.value}</dd>
+  <!-- 1º PREMIO: AUTO BYD DOLPHIN MINI -->
+  <div class="card p-6 sm:p-10 border-navy/15 bg-gradient-to-br from-white via-cloud/30 to-white shadow-card">
+    <div class="grid items-center gap-10 lg:grid-cols-2">
+      <div class="order-2 lg:order-1">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-amber-600">
+          🏆 1º PREMIO OFICIAL
+        </span>
+        <h3 class="mt-3 font-display text-3xl font-800 text-navy text-balance sm:text-4xl">
+          Un {raffle.prizeName} 0km
+        </h3>
+        <p class="mt-4 text-base leading-relaxed text-navy/70 text-pretty">
+          100% eléctrico, patentado y con todos los gastos de transferencia incluidos. El auto urbano más tecnológico del mercado.
+        </p>
+
+        <dl class="mt-8 grid grid-cols-2 gap-4">
+          {
+            raffle.prizeSpecs.map((spec, i) => {
+              const Icon = carIcons[i % carIcons.length]
+              return (
+                <div class="card flex items-start gap-3 p-4 bg-white border-navy/10 shadow-sm">
+                  <span class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-brand/10 text-brand">
+                    <Icon class="h-5 w-5" />
+                  </span>
+                  <div>
+                    <dt class="text-xs font-semibold uppercase tracking-wide text-navy/50">{spec.label}</dt>
+                    <dd class="mt-0.5 font-display text-sm font-700 text-navy">{spec.value}</dd>
+                  </div>
                 </div>
-              </div>
-            )
-          })
-        }
-      </dl>
-    </div>
+              )
+            })
+          }
+        </dl>
+      </div>
 
-    <div class="order-1 lg:order-2">
-      <div class="relative overflow-hidden rounded-3xl border border-navy/15 bg-gradient-to-b from-navy/10 via-navy/5 to-transparent p-6 sm:p-8 shadow-card backdrop-blur-md flex items-center justify-center group">
-        <!-- Ambient radial glow behind car -->
-        <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(31,143,214,0.15)_0%,transparent_75%)]"></div>
-        <!-- Studio floor reflection line -->
-        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-10 bg-brand/20 rounded-[100%] blur-xl pointer-events-none"></div>
-        
-        <img
-          src={raffle.heroImage}
-          alt={`${raffle.prizeName} 0km`}
-          width="720"
-          height="520"
-          class="w-full h-auto max-h-[380px] object-contain drop-shadow-[0_20px_30px_rgba(31,42,82,0.35)] group-hover:scale-[1.03] transition-transform duration-500"
-          loading="lazy"
-          decoding="async"
-        />
+      <div class="order-1 lg:order-2">
+        <div class="relative overflow-hidden rounded-3xl border border-navy/15 bg-gradient-to-b from-navy/10 via-navy/5 to-transparent p-6 sm:p-8 shadow-card backdrop-blur-md flex items-center justify-center group">
+          <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(31,143,214,0.15)_0%,transparent_75%)]"></div>
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-10 bg-brand/20 rounded-[100%] blur-xl pointer-events-none"></div>
+          
+          <img
+            src={raffle.heroImage}
+            alt={`${raffle.prizeName} 0km`}
+            width="720"
+            height="520"
+            class="w-full h-auto max-h-[360px] object-contain drop-shadow-[0_20px_30px_rgba(31,42,82,0.35)] group-hover:scale-[1.03] transition-transform duration-500"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2º PREMIO: MOTO BIKER ELECTRICA -->
+  <div id="premio-moto" class="card p-6 sm:p-10 border-electric/30 bg-gradient-to-br from-navy via-navy-dark to-navy text-white shadow-card scroll-mt-24">
+    <div class="grid items-center gap-10 lg:grid-cols-2">
+      <!-- Left Column: Moto Details -->
+      <div>
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-electric/15 border border-electric/30 px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-electric backdrop-blur-md">
+          🛵 2º PREMIO OFICIAL
+        </span>
+        <h3 class="mt-3 font-display text-3xl font-800 text-white text-balance sm:text-4xl">
+          {raffle.secondPrize.name}
+        </h3>
+        <p class="mt-2 text-sm font-semibold text-electric uppercase tracking-wider">
+          {raffle.secondPrize.tagline}
+        </p>
+        <p class="mt-4 text-base leading-relaxed text-white/80 text-pretty">
+          Movilidad urbana silenciosa, ecológica y ágil. Equipada con motor de 499W, batería de alta capacidad, tablero digital LCD, altavoz Bluetooth integrado y 3 modos de velocidad.
+        </p>
+
+        <dl class="mt-8 grid grid-cols-2 gap-4">
+          {
+            raffle.secondPrize.specs.map((spec, i) => {
+              const Icon = motoIcons[i % motoIcons.length]
+              return (
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md flex items-start gap-3">
+                  <span class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-electric/15 text-electric">
+                    <Icon class="h-5 w-5" />
+                  </span>
+                  <div>
+                    <dt class="text-[11px] font-semibold uppercase tracking-wide text-white/50">{spec.label}</dt>
+                    <dd class="mt-0.5 font-display text-sm font-700 text-white">{spec.value}</dd>
+                  </div>
+                </div>
+              )
+            })
+          }
+        </dl>
+      </div>
+
+      <!-- Right Column: Interactive Image Gallery -->
+      <div class="space-y-4">
+        <div class="relative overflow-hidden rounded-3xl border border-white/15 bg-white/5 p-6 sm:p-8 backdrop-blur-xl shadow-glow-sm flex items-center justify-center group min-h-[340px]">
+          <!-- Studio center radial spotlight -->
+          <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(0,212,255,0.2)_0%,transparent_75%)]"></div>
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-electric/20 rounded-[100%] blur-xl pointer-events-none"></div>
+
+          <!-- Main Image -->
+          <img
+            id="moto-main-img"
+            src={raffle.secondPrize.image}
+            alt={raffle.secondPrize.name}
+            class="w-full h-auto max-h-[340px] object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.6)] group-hover:scale-[1.03] transition-all duration-500"
+          />
+        </div>
+
+        <!-- Thumbnails Selector Bar -->
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            data-target-src={raffle.secondPrize.image}
+            class="moto-thumb-btn active flex items-center gap-2 rounded-xl border border-electric bg-electric/20 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-electric/30"
+          >
+            <ImageIcon class="h-4 w-4 text-electric" />
+            <span>Estudio</span>
+          </button>
+
+          <button
+            type="button"
+            data-target-src={raffle.secondPrize.riderImage}
+            class="moto-thumb-btn flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-bold text-white/70 transition hover:border-white/30 hover:text-white"
+          >
+            <ImageIcon class="h-4 w-4 text-electric" />
+            <span>Urbana</span>
+          </button>
+
+          <button
+            type="button"
+            data-target-src={raffle.secondPrize.specsImage}
+            class="moto-thumb-btn flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-bold text-white/70 transition hover:border-white/30 hover:text-white"
+          >
+            <ImageIcon class="h-4 w-4 text-electric" />
+            <span>Ficha Técnica Gráfica</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </section>
+
+<script>
+  function initMotoGallery() {
+    const mainImg = document.getElementById("moto-main-img") as HTMLImageElement | null
+    const thumbBtns = document.querySelectorAll<HTMLButtonElement>(".moto-thumb-btn")
+
+    thumbBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const src = btn.getAttribute("data-target-src")
+        if (mainImg && src) {
+          mainImg.style.opacity = "0"
+          setTimeout(() => {
+            mainImg.src = src
+            mainImg.style.opacity = "1"
+          }, 150)
+
+          thumbBtns.forEach((b) => {
+            b.classList.remove("border-electric", "bg-electric/20", "text-white")
+            b.classList.add("border-white/10", "bg-white/5", "text-white/70")
+          })
+          btn.classList.remove("border-white/10", "bg-white/5", "text-white/70")
+          btn.classList.add("border-electric", "bg-electric/20", "text-white")
+        }
+      })
+    })
+  }
+
+  initMotoGallery()
+  document.addEventListener("astro:after-swap", initMotoGallery)
+</script>
