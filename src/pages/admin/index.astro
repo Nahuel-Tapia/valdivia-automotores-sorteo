@@ -11,6 +11,10 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         <h1 class="mt-1 font-display text-2xl font-800 sm:text-3xl">Administración de Sorteo</h1>
       </div>
       <div class="flex items-center gap-3">
+        <button id="btn-edit-count" class="hidden btn-secondary text-xs py-2 px-3 bg-brand/20 border-brand/30 text-white hover:bg-brand">
+          <Ticket class="h-4 w-4 text-brand-light" />
+          Total Boletos
+        </button>
         <button id="btn-edit-date" class="hidden btn-secondary text-xs py-2 px-3 bg-brand/20 border-brand/30 text-white hover:bg-brand">
           <Calendar class="h-4 w-4 text-brand-light" />
           Fecha Sorteo
@@ -121,7 +125,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
           </span>
         </div>
         <p class="mt-3 font-display text-2xl font-800 text-navy" id="m-available">200</p>
-        <p class="mt-1 text-xs text-navy/60">De 200 totales</p>
+        <p class="mt-1 text-xs text-navy/60">De <span id="m-total-tickets">200</span> totales</p>
       </div>
     </div>
 
@@ -329,6 +333,49 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
           <button type="submit" id="btn-save-date" class="btn-primary text-xs py-2.5 px-4">
             Guardar Fecha
           </button>
+  <!-- Modal para Modificar Cantidad Total de Boletos -->
+  <div id="count-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-navy/60 backdrop-blur-sm p-4">
+    <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-navy/10 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand">
+            <Ticket class="h-5 w-5" />
+          </span>
+          <div>
+            <h3 class="font-display text-base font-800 text-navy">Editar Total de Boletos a la Venta</h3>
+            <p class="text-xs text-navy/60">Ampliación o ajuste de inventario</p>
+          </div>
+        </div>
+        <button type="button" id="count-modal-close-btn" class="rounded-lg p-1.5 text-navy/40 hover:bg-cloud hover:text-navy">
+          <X class="h-5 w-5" />
+        </button>
+      </div>
+
+      <form id="form-update-count" class="space-y-4">
+        <div>
+          <label class="block text-xs font-700 text-navy/70 uppercase mb-1">Cantidad Total de Números</label>
+          <input 
+            type="number" 
+            id="input-ticket-count" 
+            min="1"
+            max="9999"
+            step="1"
+            required
+            class="h-11 w-full rounded-xl border border-navy/15 px-3 text-base font-700 text-navy focus:border-brand focus:outline-none"
+            placeholder="200"
+          />
+          <p class="mt-2 text-xs text-navy/50 leading-relaxed">
+            Al aumentar (ej: de 200 a 500), la grilla generará automáticamente los nuevos boletos disponibles en tiempo real.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" id="count-modal-cancel-btn" class="btn-secondary text-xs py-2.5 px-4">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-save-count" class="btn-primary text-xs py-2.5 px-4">
+            Guardar Cantidad
+          </button>
         </div>
       </form>
     </div>
@@ -356,6 +403,11 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     const dateModalCloseBtn = document.getElementById("date-modal-close-btn")
     const dateModalCancelBtn = document.getElementById("date-modal-cancel-btn")
 
+    const editCountBtn = document.getElementById("btn-edit-count")
+    const countModal = document.getElementById("count-modal")
+    const countModalCloseBtn = document.getElementById("count-modal-close-btn")
+    const countModalCancelBtn = document.getElementById("count-modal-cancel-btn")
+
     // Elementos del Modal
     const orderModal = document.getElementById("order-modal")
     const modalCloseBtn = document.getElementById("modal-close-btn")
@@ -378,12 +430,15 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       resetDbBtn?.classList.add("hidden")
       editPriceBtn?.classList.add("hidden")
       editDateBtn?.classList.add("hidden")
+      editCountBtn?.classList.add("hidden")
       orderModal?.classList.add("hidden")
       orderModal?.classList.remove("flex")
       priceModal?.classList.add("hidden")
       priceModal?.classList.remove("flex")
       dateModal?.classList.add("hidden")
       dateModal?.classList.remove("flex")
+      countModal?.classList.add("hidden")
+      countModal?.classList.remove("flex")
     }
 
     // Siempre solicitar credenciales de inicio de sesión al ingresar/recargar la pestaña /admin
@@ -545,6 +600,20 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
     dateModalCloseBtn?.addEventListener("click", closeDateModal)
     dateModalCancelBtn?.addEventListener("click", closeDateModal)
 
+    editCountBtn?.addEventListener("click", async () => {
+      await loadSettings()
+      countModal?.classList.remove("hidden")
+      countModal?.classList.add("flex")
+    })
+
+    const closeCountModal = () => {
+      countModal?.classList.add("hidden")
+      countModal?.classList.remove("flex")
+    }
+
+    countModalCloseBtn?.addEventListener("click", closeCountModal)
+    countModalCancelBtn?.addEventListener("click", closeCountModal)
+
     async function showDashboard() {
       const currentToken = getAdminToken()
       if (!currentToken) {
@@ -556,6 +625,7 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
       dashSec?.classList.remove("hidden")
       editPriceBtn?.classList.remove("hidden")
       editDateBtn?.classList.remove("hidden")
+      editCountBtn?.classList.remove("hidden")
       logoutBtn?.classList.remove("hidden")
       exportBtn?.classList.remove("hidden")
       resetDbBtn?.classList.remove("hidden")
@@ -579,6 +649,8 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
           document.getElementById("m-paid")!.textContent = String(m.paidTickets)
           document.getElementById("m-reserved")!.textContent = String(m.reservedTickets)
           document.getElementById("m-available")!.textContent = String(m.availableTickets)
+          const mTotal = document.getElementById("m-total-tickets")
+          if (mTotal) mTotal.textContent = String(m.totalTickets)
 
           allOrders = data.recentOrders || []
           renderOrdersTable(allOrders)
@@ -609,6 +681,10 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
                 inputDate.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
               }
             }
+          }
+          if (data.totalTickets) {
+            const inputCount = document.getElementById("input-ticket-count") as HTMLInputElement | null
+            if (inputCount) inputCount.value = String(data.totalTickets)
           }
         }
       } catch (err) {
@@ -683,6 +759,40 @@ import { ShieldCheck, DollarSign, Ticket, Lock, LogOut, Download, Search, CheckC
         }
       } catch {
         alert("Error de conexión al actualizar la fecha del sorteo.")
+      }
+    })
+
+    const countForm = document.getElementById("form-update-count") as HTMLFormElement | null
+    countForm?.addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const currentToken = getAdminToken()
+      const countInput = document.getElementById("input-ticket-count") as HTMLInputElement | null
+      const newCount = Number(countInput?.value)
+
+      if (isNaN(newCount) || newCount <= 0) {
+        alert("Por favor ingresá una cantidad de boletos válida mayor a 0.")
+        return
+      }
+
+      try {
+        const res = await fetch("/api/admin/settings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentToken}`,
+          },
+          body: JSON.stringify({ totalTickets: newCount }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          alert(`✨ ${data.message}`)
+          closeCountModal()
+          showDashboard()
+        } else {
+          alert(`❌ ${data.error || "No se pudo actualizar la cantidad de boletos."}`)
+        }
+      } catch {
+        alert("Error de conexión al actualizar la cantidad de boletos.")
       }
     })
 

@@ -4,12 +4,13 @@ export const prerender = false
 import Layout from "@/layouts/Layout.astro"
 import { raffle, formatCurrency } from "@/data/raffle"
 import { getDBTickets } from "@/lib/services/tickets"
-import { getTicketPrice } from "@/lib/services/settings"
+import { getTicketPrice, getTicketCount } from "@/lib/services/settings"
 import { ArrowRight, Search, Shuffle, Clock } from "lucide-astro"
 
-// Cargar precio dinámico y boletos en tiempo real
+// Cargar precio dinámico, total de boletos y mapa en tiempo real
 const ticketUnitPrice = await getTicketPrice()
-const initialTickets = await getDBTickets("", "all", 200)
+const totalTicketsCount = await getTicketCount()
+const initialTickets = await getDBTickets("", "all", totalTicketsCount)
 ---
 
 <Layout title="Reserva de Números Estilo Cine | Valdivia Automotores">

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
 import { verifyAdminRequest } from "@/lib/services/auth"
-import { getTicketPrice, setTicketPrice, getDrawDate, setDrawDate } from "@/lib/services/settings"
+import { getTicketPrice, setTicketPrice, getDrawDate, setDrawDate, getTicketCount, setTicketCount } from "@/lib/services/settings"
 
 export const prerender = false
 
@@ -15,8 +15,9 @@ export const GET: APIRoute = async ({ request }) => {
 
     const price = await getTicketPrice()
     const drawDate = await getDrawDate()
+    const totalTickets = await getTicketCount()
     return new Response(
-      JSON.stringify({ success: true, ticketPrice: price, drawDate }),
+      JSON.stringify({ success: true, ticketPrice: price, drawDate, totalTickets }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     )
   } catch (error) {
@@ -38,7 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const body = await request.json()
-    const { ticketPrice, drawDate } = body
+    const { ticketPrice, drawDate, totalTickets } = body
 
     if (ticketPrice !== undefined) {
       const priceNum = Number(ticketPrice)
@@ -61,8 +62,26 @@ export const POST: APIRoute = async ({ request }) => {
       await setDrawDate(drawDate)
     }
 
+    if (totalTickets !== undefined) {
+      const countNum = Number(totalTickets)
+      if (isNaN(countNum) || countNum <= 0) {
+        return new Response(
+          JSON.stringify({ error: "La cantidad de boletos debe ser un número válido mayor a 0." }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        )
+      }
+      const countRes = await setTicketCount(countNum)
+      if (!countRes.success) {
+        return new Response(
+          JSON.stringify({ error: countRes.error || "No se pudo actualizar la cantidad de boletos." }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        )
+      }
+    }
+
     const updatedPrice = await getTicketPrice()
     const updatedDate = await getDrawDate()
+    const updatedCount = await getTicketCount()
 
     return new Response(
       JSON.stringify({
@@ -70,6 +89,7 @@ export const POST: APIRoute = async ({ request }) => {
         message: "Configuraciones actualizadas exitosamente.",
         ticketPrice: updatedPrice,
         drawDate: updatedDate,
+        totalTickets: updatedCount,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     )
