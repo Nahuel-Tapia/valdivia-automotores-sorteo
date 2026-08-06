@@ -1,8 +1,9 @@
 ---
 import { db, initDB } from "@/lib/db"
+import { getTicketCount } from "@/lib/services/settings"
 
 let paidTickets = 0
-const totalTickets = 200
+const totalTickets = await getTicketCount()
 
 try {
   await initDB()
@@ -12,7 +13,7 @@ try {
   console.error("Error consultando conteo de boletos vendidos para ProgressBar:", error)
 }
 
-const percentage = Math.min(100, Math.round((paidTickets / totalTickets) * 100))
+const percentage = totalTickets > 0 ? Math.min(100, Math.round((paidTickets / totalTickets) * 100)) : 0
 ---
 
 <section class="container-app -mt-6 pb-4 pt-16">

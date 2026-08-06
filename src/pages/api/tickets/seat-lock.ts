@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro"
 import { toggleSeatLock } from "@/lib/services/tickets"
+import { getTicketCount } from "@/lib/services/settings"
 
 export const prerender = false
 
@@ -7,10 +8,12 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const { number, sessionId } = await request.json()
 
-    const numStr = String(number ?? "").padStart(3, "0")
+    const totalTickets = await getTicketCount()
+    const padLen = totalTickets > 999 ? 4 : 3
+    const numStr = String(number ?? "").padStart(padLen, "0")
     const sessStr = String(sessionId ?? "").trim()
 
-    if (!/^\d{3}$/.test(numStr) || !sessStr || sessStr.length > 100) {
+    if (!/^\d+$/.test(numStr) || !sessStr || sessStr.length > 100) {
       return new Response(
         JSON.stringify({ error: "Formato de número o ID de sesión inválido." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -18,9 +21,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const numVal = parseInt(numStr, 10)
-    if (numVal < 1 || numVal > 200) {
+    if (numVal < 1 || numVal > totalTickets) {
       return new Response(
-        JSON.stringify({ error: "El número debe estar entre 001 y 200." }),
+        JSON.stringify({ error: `El número debe estar entre ${String(1).padStart(padLen, "0")} y ${totalTickets}.` }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       )
     }
