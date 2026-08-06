@@ -5,7 +5,7 @@ import Layout from "@/layouts/Layout.astro"
 import { raffle, formatCurrency } from "@/data/raffle"
 import { getDBTickets } from "@/lib/services/tickets"
 import { getTicketPrice, getTicketCount } from "@/lib/services/settings"
-import { ArrowRight, Search, Shuffle, Clock } from "lucide-astro"
+import { ArrowRight, Search, Clock } from "lucide-astro"
 
 // Cargar precio dinámico, total de boletos y mapa en tiempo real
 const ticketUnitPrice = await getTicketPrice()
@@ -19,7 +19,7 @@ const initialTickets = await getDBTickets("", "all", totalTicketsCount)
       <span class="text-sm font-semibold uppercase tracking-[0.16em] text-brand-light">Paso 1 de 3</span>
       <h1 class="mt-2 font-display text-3xl font-800 sm:text-4xl">Reservá tus números en tiempo real</h1>
       <p class="mt-2 max-w-xl text-white/75">
-        Participá por el <strong class="text-brand-light font-bold">1º Premio (BYD Dolphin Mini 0km)</strong> y el <strong class="text-brand-light font-bold">2º Premio (Moto BIKE MOTO Eléctrica)</strong>. Elegí tus números en la grilla. Quedarán congelados exclusivamente para vos durante 10 minutos.
+        Elegí tus boletos en la grilla estilo las butacas de un cine. Los números que selecciones quedarán **congelados exclusivamente para vos** durante 10 minutos.
       </p>
     </div>
   </section>
@@ -42,15 +42,9 @@ const initialTickets = await getDBTickets("", "all", totalTicketsCount)
     <!-- Contenido Izquierdo: Mapa de Boletos -->
     <div class="space-y-6">
       <div class="card p-6">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 class="font-display text-lg font-700 text-navy">Selección de Butacas / Boletos</h2>
-            <p class="text-xs text-navy/60">Tocá cualquier casilla verde para congelarla <strong class="text-brand">(Máximo 5 números por reserva)</strong></p>
-          </div>
-          <button type="button" id="btn-random" class="btn-secondary text-sm py-2 px-3">
-            <Shuffle class="h-4 w-4 text-brand" />
-            Selección Aleatoria (hasta 5)
-          </button>
+        <div>
+          <h2 class="font-display text-lg font-700 text-navy">Selección de Butacas / Boletos</h2>
+          <p class="text-xs text-navy/60">Tocá cualquier casilla verde para congelarla <strong class="text-brand">(Máximo 5 números por reserva)</strong></p>
         </div>
 
         <div class="mt-4 flex items-center gap-3">
@@ -255,23 +249,6 @@ const initialTickets = await getDBTickets("", "all", totalTicketsCount)
           btn.style.opacity = "1"
         }
       })
-    })
-
-    // Botón Selección Aleatoria (hasta completar 5 boletos)
-    document.getElementById("btn-random")?.addEventListener("click", () => {
-      const availableBtns = seatBtns.filter((btn) => !btn.disabled && !selectedNumbers.includes(btn.dataset.number ?? ""))
-      if (availableBtns.length === 0) {
-        alert("No hay más números disponibles.")
-        return
-      }
-      const needed = 5 - selectedNumbers.length
-      if (needed <= 0) {
-        alert("Ya tenés seleccionados los 5 números máximos permitidos.")
-        return
-      }
-      const shuffled = [...availableBtns].sort(() => 0.5 - Math.random())
-      const toPick = shuffled.slice(0, needed)
-      toPick.forEach((btn) => btn.click())
     })
 
     const fetchLiveStatus = async () => {
